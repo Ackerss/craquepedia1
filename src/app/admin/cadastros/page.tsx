@@ -29,7 +29,7 @@ export default function CadastrosPage() {
     const sports = Array.from(new Set(submissions.map((s) => s.sport_name)));
 
     const filtered = submissions.filter((s) => {
-        const matchSearch = s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchSearch = (s.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.sport_nickname || "").toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatus = filterStatus === "todos" || s.status === filterStatus;
         const matchSport = filterSport === "todos" || s.sport_name === filterSport;
@@ -117,7 +117,7 @@ export default function CadastrosPage() {
                                     <td style={{ padding: "14px 20px" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--primary-color)", flexShrink: 0 }}>
-                                                {sub.full_name.charAt(0)}
+                                                {(sub.full_name || "?").charAt(0)}
                                             </div>
                                             <div>
                                                 <p style={{ fontWeight: 600, fontSize: 14 }}>{sub.full_name}</p>

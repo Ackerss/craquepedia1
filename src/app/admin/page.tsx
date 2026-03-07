@@ -131,7 +131,7 @@ export default function AdminDashboardPage() {
                                 >
                                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                         <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--primary-color)" }}>
-                                            {sub.full_name.charAt(0)}
+                                            {(sub.full_name || "?").charAt(0)}
                                         </div>
                                         <div>
                                             <p style={{ fontWeight: 600, fontSize: 14 }}>{sub.full_name}</p>
