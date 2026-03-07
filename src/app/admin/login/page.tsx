@@ -9,16 +9,27 @@ export default function AdminLoginPage() {
     const router = useRouter();
 
     useEffect(() => {
+        let isMounted = true;
         const autoLogin = async () => {
-            // Auto-login silencioso a pedido do usuário para testar sem senhas
-            await supabase.auth.signInWithPassword({
-                email: "admin@craquepedia.com",
-                password: "AdminCraquepedia2026!"
-            });
-            router.push("/admin");
-            router.refresh();
+            try {
+                // Auto-login silencioso a pedido do usuário para testar sem senhas
+                await supabase.auth.signInWithPassword({
+                    email: "admin@craquepedia.com",
+                    password: "AdminCraquepedia2026!"
+                });
+                if (isMounted) {
+                    router.replace("/admin");
+                }
+            } catch (err) {
+                console.error("Auto login falhou:", err);
+                if (isMounted) {
+                    router.replace("/admin");
+                }
+            }
         };
         autoLogin();
+
+        return () => { isMounted = false; };
     }, [router]);
 
     return (

@@ -17,6 +17,7 @@ export default function RevisaoCadastroPage() {
     const id = params.id as string;
 
     const [submission, setSubmission] = useState<Submission | null>(null);
+    const [sportSchema, setSportSchema] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editMode, setEditMode] = useState(false);
@@ -25,16 +26,26 @@ export default function RevisaoCadastroPage() {
 
     useEffect(() => {
         async function load() {
-            const { data, error } = await supabase
+            const { data: subData, error: subErr } = await supabase
                 .from("submissions")
                 .select("*")
                 .eq("id", id)
                 .single();
 
-            if (data && !error) {
-                setSubmission(data);
-                setNotes(data.admin_notes || "");
-                setEditData(data);
+            if (subData && !subErr) {
+                setSubmission(subData);
+                setNotes(subData.admin_notes || "");
+                setEditData(subData);
+
+                // Load the specific sport schema
+                const { data: sportData } = await supabase
+                    .from("sports")
+                    .select("specific_fields")
+                    .eq("id", subData.sport_id)
+                    .single();
+                if (sportData) {
+                    setSportSchema(sportData.specific_fields || []);
+                }
             }
             setLoading(false);
         }
@@ -232,7 +243,42 @@ export default function RevisaoCadastroPage() {
                             <Activity size={18} color="var(--primary-color)" /> Dados de {submission.sport_name}
                         </h3>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
-                            {Object.entries(sportData).map(([key, value]) => (
+                            {sportSchema.length > 0 ? sportSchema.map((field) => (
+                                <div key={field.key} style={{ marginBottom: 12, gridColumn: field.type === 'textarea' ? '1 / -1' : 'auto' }}>
+                                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase" }}>
+                                        {field.label}
+                                    </label>
+                                    {editMode ? (
+                                        field.type === 'textarea' ? (
+                                            <textarea
+                                                style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+                                                value={String((editData.sport_data as any)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
+                                            />
+                                        ) : field.type === 'select' ? (
+                                            <select
+                                                style={inputStyle}
+                                                value={String((editData.sport_data as any)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                style={inputStyle}
+                                                type={field.type === "number" ? "number" : "text"}
+                                                value={String((editData.sport_data as any)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value } })}
+                                            />
+                                        )
+                                    ) : (
+                                        <p style={{ fontSize: 14, fontWeight: 500 }}>
+                                            {Array.isArray(sportData[field.key]) ? (sportData[field.key] as string[]).join(", ") : String(sportData[field.key] || "—")}
+                                        </p>
+                                    )}
+                                </div>
+                            )) : Object.entries(sportData).map(([key, value]) => (
                                 <div key={key} style={{ marginBottom: 12 }}>
                                     <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase" }}>
                                         {key.replace(/_/g, " ")}
