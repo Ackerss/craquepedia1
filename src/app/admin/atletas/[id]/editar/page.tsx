@@ -1,0 +1,212 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
+import type { Athlete, Sport, SportField } from "@/lib/supabase/types";
+
+export default function EditarAtletaPage() {
+    const params = useParams();
+    const router = useRouter();
+    const id = params.id as string;
+
+    const [athlete, setAthlete] = useState<Athlete | null>(null);
+    const [sports, setSports] = useState<Sport[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const [general, setGeneral] = useState({
+        full_name: "", sport_nickname: "", birth_date: "", phone: "", email: "",
+        city: "", state: "", status: "ativo" as string,
+    });
+    const [generalData, setGeneralData] = useState<Record<string, string>>({});
+    const [sportData, setSportData] = useState<Record<string, string | number>>({});
+
+    useEffect(() => {
+        async function load() {
+            const [athleteRes, sportsRes] = await Promise.all([
+                supabase.from("athletes").select("*").eq("id", id).single(),
+                supabase.from("sports").select("*").order("name"),
+            ]);
+
+            if (athleteRes.data) {
+                const a = athleteRes.data;
+                setAthlete(a);
+                setGeneral({
+                    full_name: a.full_name || "",
+                    sport_nickname: a.sport_nickname || "",
+                    birth_date: a.birth_date || "",
+                    phone: a.phone || "",
+                    email: a.email || "",
+                    city: a.city || "",
+                    state: a.state || "",
+                    status: a.status || "ativo",
+                });
+                setGeneralData((a.general_data || {}) as Record<string, string>);
+                setSportData((a.sport_data || {}) as Record<string, string | number>);
+            }
+            if (sportsRes.data) setSports(sportsRes.data);
+            setLoading(false);
+        }
+        load();
+    }, [id]);
+
+    const handleSave = async () => {
+        if (!athlete) return;
+        setSaving(true);
+
+        const { error } = await supabase.from("athletes").update({
+            full_name: general.full_name,
+            sport_nickname: general.sport_nickname,
+            birth_date: general.birth_date,
+            phone: general.phone,
+            email: general.email,
+            city: general.city,
+            state: general.state,
+            status: general.status,
+            general_data: generalData,
+            sport_data: sportData,
+            updated_at: new Date().toISOString(),
+        }).eq("id", id);
+
+        setSaving(false);
+        if (!error) {
+            router.push("/admin/atletas");
+        } else {
+            alert("Erro: " + error.message);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm("Tem certeza que deseja excluir este atleta?")) return;
+        await supabase.from("athletes").delete().eq("id", id);
+        router.push("/admin/atletas");
+    };
+
+    if (loading) {
+        return (
+            <div style={{ padding: 48, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "var(--text-secondary)" }}>
+                <Loader2 size={24} style={{ animation: "spin 1s linear infinite" }} />
+                <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
+
+    if (!athlete) {
+        return (<div style={{ padding: 48, textAlign: "center" }}><p>Atleta não encontrado.</p><Link href="/admin/atletas">Voltar</Link></div>);
+    }
+
+    const currentSport = sports.find((s) => s.id === athlete.sport_id);
+    const specificFields = currentSport?.specific_fields as SportField[] || [];
+
+    const inputStyle: React.CSSProperties = {
+        width: "100%", padding: "11px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)",
+        fontSize: 14, fontFamily: "inherit", outline: "none",
+    };
+    const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 };
+
+    return (
+        <div style={{ padding: "28px 32px", maxWidth: 800, margin: "0 auto" }} className="animate-fade-in">
+            <Link href="/admin/atletas" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", marginBottom: 16, fontWeight: 500 }}>
+                <ArrowLeft size={16} /> Voltar aos atletas
+            </Link>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+                <div>
+                    <h1 style={{ fontSize: 26, fontWeight: 800 }}>{athlete.sport_nickname || athlete.full_name}</h1>
+                    <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{athlete.sport_name}</p>
+                </div>
+                <button onClick={handleDelete} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ef4444", border: "1px solid #ef444440", cursor: "pointer", background: "rgba(239,68,68,0.05)" }}>
+                    <Trash2 size={14} /> Excluir
+                </button>
+            </div>
+
+            {/* Dados pessoais */}
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>👤 Dados Pessoais</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <div><label style={labelStyle}>Nome Completo *</label><input style={inputStyle} required value={general.full_name} onChange={(e) => setGeneral({ ...general, full_name: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Nome Esportivo</label><input style={inputStyle} value={general.sport_nickname} onChange={(e) => setGeneral({ ...general, sport_nickname: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Data de Nascimento</label><input style={inputStyle} type="date" value={general.birth_date} onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })} /></div>
+                    <div><label style={labelStyle}>WhatsApp</label><input style={inputStyle} value={general.phone} onChange={(e) => setGeneral({ ...general, phone: e.target.value })} /></div>
+                    <div><label style={labelStyle}>E-mail</label><input style={inputStyle} type="email" value={general.email} onChange={(e) => setGeneral({ ...general, email: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Cidade</label><input style={inputStyle} value={general.city} onChange={(e) => setGeneral({ ...general, city: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Estado</label><input style={inputStyle} value={general.state} onChange={(e) => setGeneral({ ...general, state: e.target.value })} /></div>
+                    <div>
+                        <label style={labelStyle}>Status</label>
+                        <select style={inputStyle} value={general.status} onChange={(e) => setGeneral({ ...general, status: e.target.value })}>
+                            <option value="ativo">Ativo</option>
+                            <option value="inativo">Inativo</option>
+                            <option value="pendente">Pendente</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Dados gerais */}
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📋 Informações Gerais</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    <div><label style={labelStyle}>Instagram</label><input style={inputStyle} value={generalData.instagram || ""} onChange={(e) => setGeneralData({ ...generalData, instagram: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Altura</label><input style={inputStyle} value={generalData.altura || ""} onChange={(e) => setGeneralData({ ...generalData, altura: e.target.value })} /></div>
+                    <div><label style={labelStyle}>Peso</label><input style={inputStyle} value={generalData.peso || ""} onChange={(e) => setGeneralData({ ...generalData, peso: e.target.value })} /></div>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Biografia</label>
+                    <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={generalData.bio || ""} onChange={(e) => setGeneralData({ ...generalData, bio: e.target.value })} />
+                </div>
+            </div>
+
+            {/* Campos do esporte */}
+            {specificFields.length > 0 && (
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
+                        {currentSport?.icon} Dados de {athlete.sport_name}
+                    </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        {specificFields.map((field) => {
+                            if (field.type === "select") {
+                                return (
+                                    <div key={field.key}>
+                                        <label style={labelStyle}>{field.label}</label>
+                                        <select style={inputStyle} value={String(sportData[field.key] || "")} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })}>
+                                            <option value="">Selecione...</option>
+                                            {field.options?.map((opt) => <option key={opt}>{opt}</option>)}
+                                        </select>
+                                    </div>
+                                );
+                            }
+                            if (field.type === "textarea") {
+                                return (
+                                    <div key={field.key} style={{ gridColumn: "1 / -1" }}>
+                                        <label style={labelStyle}>{field.label}</label>
+                                        <textarea style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} value={String(sportData[field.key] || "")} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })} />
+                                    </div>
+                                );
+                            }
+                            return (
+                                <div key={field.key}>
+                                    <label style={labelStyle}>{field.label}</label>
+                                    <input style={inputStyle} type={field.type === "number" ? "number" : "text"} value={String(sportData[field.key] || "")} onChange={(e) => setSportData({ ...sportData, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value })} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={handleSave} disabled={saving} style={{
+                    display: "flex", alignItems: "center", gap: 8, padding: "14px 28px",
+                    background: saving ? "#94a3b8" : "var(--primary-color)", color: "#fff",
+                    borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: saving ? "not-allowed" : "pointer", border: "none",
+                }}>
+                    {saving ? <><Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> Salvando...</> : <><Save size={18} /> Salvar Alterações</>}
+                </button>
+            </div>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } input:focus, textarea:focus, select:focus { border-color: var(--primary-color) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important; }`}</style>
+        </div>
+    );
+}

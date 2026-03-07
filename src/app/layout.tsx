@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import MainLayout from "@/components/layout/MainLayout";
 
 export const metadata: Metadata = {
-  title: "CRAQUEPEDIA | Gerenciamento Esportivo",
-  description: "Plataforma premium para gestão e marketing de atletas — Versão Isolada Gemini",
+  title: "CRAQUEPEDIA | Gestão Esportiva",
+  description: "Plataforma premium para gestão e marketing de atletas profissionais",
 };
 
 export default function RootLayout({
@@ -14,9 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>
-        <MainLayout>{children}</MainLayout>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
