@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, ArrowLeft, Loader2, Check, User, Phone, Mail, MapPin, Calendar, Instagram, FileText, Activity } from "lucide-react";
+import { Trophy, ArrowLeft, Loader2, Check, User, Phone, Mail, MapPin, Calendar, Instagram, FileText, Activity, Dribbble, Target, Flame, Medal } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import type { Sport, SportField } from "@/lib/supabase/types";
 import Link from "next/link";
@@ -11,6 +11,26 @@ const ESTADOS_BR = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
     "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
+
+const getFallbackIcon = (slug: string, color: string) => {
+    const props = { size: 22, color, strokeWidth: 1.5 };
+    switch (slug) {
+        case 'futebol':
+        case 'futsal':
+            return <Dribbble {...props} />;
+        case 'artes-marciais':
+            return <Target {...props} />;
+        case 'basquete':
+        case 'volei':
+            return <Activity {...props} />;
+        case 'natacao':
+        case 'corrida':
+        case 'atletismo':
+            return <Flame {...props} />;
+        default:
+            return <Medal {...props} />;
+    }
+};
 
 export default function CadastroEsportePage() {
     const params = useParams();
@@ -155,43 +175,48 @@ export default function CadastroEsportePage() {
 
     const inputStyle: React.CSSProperties = {
         width: "100%",
-        padding: "12px 16px",
-        borderRadius: 10,
-        border: "1.5px solid var(--border-color)",
-        fontSize: 14,
+        padding: "14px 18px",
+        borderRadius: 14,
+        border: "1.5px solid rgba(0,0,0,0.08)",
+        fontSize: 15,
         fontFamily: "inherit",
-        background: "#fafbfc",
-        transition: "all 0.2s",
+        background: "#f8fafc",
+        transition: "all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)",
         outline: "none",
+        color: "#0f172a"
     };
 
     const labelStyle: React.CSSProperties = {
         display: "block",
         fontSize: 13,
-        fontWeight: 600,
-        color: "var(--text-primary)",
-        marginBottom: 6,
+        fontWeight: 700,
+        color: "#475569",
+        marginBottom: 8,
     };
 
     const sectionStyle: React.CSSProperties = {
+        background: "#fff",
+        borderRadius: 24,
+        padding: "32px",
         marginBottom: 32,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
+        border: "1px solid rgba(0,0,0,0.04)"
     };
 
     const sectionTitleStyle: React.CSSProperties = {
-        fontSize: 16,
-        fontWeight: 700,
-        marginBottom: 16,
-        paddingBottom: 8,
-        borderBottom: "2px solid var(--border-color)",
+        fontSize: 18,
+        fontWeight: 800,
+        marginBottom: 24,
+        color: "#0f172a",
         display: "flex",
         alignItems: "center",
-        gap: 8,
+        gap: 10,
     };
 
     const fieldGroupStyle: React.CSSProperties = {
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-        gap: 16,
+        gap: 20,
     };
 
     const renderMultiSelect = (field: SportField) => {
@@ -234,21 +259,36 @@ export default function CadastroEsportePage() {
     };
 
     return (
-        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-            {/* Header */}
-            <header style={{ padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", background: "#fff" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 18 }}>
-                    <Trophy size={22} color="var(--primary-color)" />
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+            {/* Header Premium */}
+            <header
+                style={{
+                    padding: "20px 48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "rgba(255, 255, 255, 0.9)",
+                    backdropFilter: "blur(10px)",
+                    borderBottom: "1px solid rgba(0,0,0,0.05)",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 10,
+                }}
+            >
+                <div style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 800, fontSize: 20, letterSpacing: "-0.5px" }}>
+                    <div style={{ background: "linear-gradient(135deg, var(--primary-color), #4f46e5)", padding: 8, borderRadius: 10 }}>
+                        <Trophy size={18} color="#fff" />
+                    </div>
                     CRAQUE<span style={{ color: "var(--primary-color)" }}>PEDIA</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 8, background: `${sport.color}15`, color: sport.color, fontWeight: 600, fontSize: 14 }}>
-                    <span>{sport.icon}</span> {sport.name}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 20, background: `${sport.color}15`, color: sport.color, fontWeight: 700, fontSize: 13, border: `1px solid ${sport.color}30` }}>
+                    <span>{sport.icon && sport.icon.length <= 2 ? sport.icon : getFallbackIcon(sport.slug, sport.color)}</span> {sport.name}
                 </div>
             </header>
 
             {/* Progress Bar */}
-            <div style={{ padding: "0 32px", background: "#fff", borderBottom: "1px solid var(--border-color)" }}>
-                <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", gap: 0, padding: "16px 0" }}>
+            <div style={{ padding: "32px 32px 0 32px", background: "#f8fafc" }}>
+                <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", gap: 0, padding: "0" }}>
                     {["Dados Pessoais", "Dados do Esporte"].map((label, idx) => {
                         const stepNum = idx + 1;
                         const isActive = step === stepNum;
@@ -578,9 +618,17 @@ export default function CadastroEsportePage() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
         input:focus, textarea:focus, select:focus {
           border-color: ${sport?.color || "var(--primary-color)"} !important;
-          box-shadow: 0 0 0 3px ${sport?.color || "var(--primary-color)"}20 !important;
+          box-shadow: 0 0 0 4px ${sport?.color || "var(--primary-color)"}20 !important;
+          background: #fff !important;
         }
       `}</style>
         </div>
