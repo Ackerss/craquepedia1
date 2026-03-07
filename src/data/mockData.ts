@@ -38,6 +38,23 @@ export interface Atleta {
     status: AtletaStatus;
     avatar: string;
     birthDate: string;
+    age?: number; // Added based on instruction, assuming it's an optional alternative to 'idade'
+    pe?: string;
+    peso?: string;
+    altura?: string;
+    mockLayoutTheme?: string;
+    stats?: {
+        gols?: number;
+        titulos?: number;
+        convococao?: number;
+        prevClubes?: number;
+    };
+    clubes?: Array<{
+        nome: string;
+        competicao: string;
+        ano: string;
+    }>;
+    qualidadesCV?: Record<string, number>; // Renamed to avoid conflict with existing 'qualidades'
     idade: number;
     height: string;
     weight: string;

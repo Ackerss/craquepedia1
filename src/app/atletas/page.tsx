@@ -4,15 +4,16 @@ import React, { useState } from "react";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { Plus, Search, Filter, MoreVertical, MapPin } from "lucide-react";
-import { ATLETAS } from "@/data/mockData";
-
-const ESPORTES = ["Todos", ...Array.from(new Set(ATLETAS.map((a) => a.sport)))];
+import { useStore } from "@/data/store";
 
 export default function AtletasPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterSport, setFilterSport] = useState("Todos");
 
-    const filteredAtletas = ATLETAS.filter((a) => {
+    const atletas = useStore((state) => state.atletas);
+    const ESPORTES = ["Todos", ...Array.from(new Set(atletas.map((a) => a.sport)))];
+
+    const filteredAtletas = atletas.filter((a) => {
         const matchName = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.nomeEsportivo.toLowerCase().includes(searchTerm.toLowerCase());
         const matchSport = filterSport === "Todos" || a.sport === filterSport;
@@ -25,7 +26,7 @@ export default function AtletasPage() {
                 <div>
                     <h1 className="page-title">Atletas</h1>
                     <p className="page-subtitle">
-                        Gerencie o portfólio e informações dos seus atletas. {ATLETAS.length} atletas cadastrados.
+                        Gerencie o portfólio e informações dos seus atletas. {atletas.length} atletas cadastrados.
                     </p>
                 </div>
                 <Link href="/atletas/novo" className={styles.btnPrimary}>

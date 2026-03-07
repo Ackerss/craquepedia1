@@ -78,6 +78,38 @@ export default function AtletaProfile() {
                     </button>
                 </div>
             </div>
+            {/* This section is likely intended for the "Cartão Digital" tab content, but placed here for now based on the user's snippet */}
+            {/* It seems the user wants to add this content outside the tab structure for now, or the context was incomplete. */}
+            {/* Placing it here as per the provided snippet's relative position. */}
+            {/* Note: The `<li>` elements are not wrapped in a `<ul>` in the provided snippet, which might cause rendering issues. */}
+            {/* Assuming this is a temporary placement or part of a larger, unprovided "Cartão Digital" section. */}
+            {/* For now, inserting as provided, but it might need adjustment if this is meant to be inside a specific tab. */}
+            <div className={styles.cardInfo} style={{ marginTop: '20px' }}>
+                <h3 className={styles.cardTitle}>📱 Cartão Digital</h3>
+                <p>Seu cartão de visitas digital com todas as suas informações e links importantes.</p>
+                <ul style={{ listStyle: 'none', padding: 0, marginTop: '10px' }}>
+                    <li><CheckCircle size={14} /> Links Ilimitados</li>
+                    <li><CheckCircle size={14} /> Tema Personalizado ({atleta.mockLayoutTheme === 'light' ? 'Claro' : 'Escuro'})</li>
+                </ul>
+                <Link href={`/atletas/${atleta.id}/editar-cartao`} className={styles.btnPrimary} style={{ width: '100%', marginTop: '20px', justifyContent: 'center' }}>
+                    <Edit size={16} /> Editar Aparência e Links do Cartão
+                </Link>
+            </div>
+            <div className={styles.downloadCard}>
+                <div className={styles.downloadIcon}>📄</div>
+                <div>
+                    <h4>Currículo em PDF Oficial</h4>
+                    <p>Versão clean e otimizada para envio e impressão.</p>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <Link href={`/atletas/${atleta.id}/cv-impressao`} className={styles.btnPrimary} style={{ padding: '8px 16px' }}>
+                            Visualizar Currículo Real
+                        </Link>
+                        <Link href={`/atletas/${atleta.id}/editar-curriculo`} className={styles.btnSecondary} style={{ padding: '8px 16px' }}>
+                            <Edit size={14} style={{ marginRight: 4 }} /> Editar Dados Técnicos
+                        </Link>
+                    </div>
+                </div>
+            </div>
 
             <div className={styles.tabsContainer}>
                 {TABS.map((tab) => (

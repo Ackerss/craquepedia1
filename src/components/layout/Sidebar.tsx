@@ -25,6 +25,7 @@ const MENU_ITEMS = [
     { name: "Entregas", href: "/entregas", icon: Briefcase },
     { name: "Templates", href: "/templates", icon: Layers },
     { name: "Tarefas", href: "/tarefas", icon: ClipboardList },
+    { name: "Integração / Formulário", href: "/onboarding", icon: GitBranch },
 ];
 
 export default function Sidebar({ isOpen }: { isOpen: boolean }) {
