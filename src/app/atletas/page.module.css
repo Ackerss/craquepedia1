@@ -1,0 +1,243 @@
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.btnPrimary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    transition: background-color var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.btnPrimary:hover {
+    background-color: var(--primary-hover);
+}
+
+.filtersCard {
+    background-color: var(--bg-card);
+    padding: 16px 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.searchBox {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    transition: border-color var(--transition-fast);
+}
+
+.searchBox:focus-within {
+    border-color: var(--primary-color);
+    background-color: white;
+}
+
+.searchIcon {
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.searchInput {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.filterGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filterSelectWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.filterIcon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.selectInput {
+    appearance: none;
+    background-color: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 40px 10px 36px;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.avatarWrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    background-color: var(--bg-app);
+    color: var(--primary-color);
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.atletaName {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.atletaSport {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.moreBtn {
+    color: var(--text-secondary);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+}
+
+.moreBtn:hover {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+}
+
+.cardBody {
+    margin-bottom: 20px;
+}
+
+.infoRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.infoIcon {
+    color: #94a3b8;
+}
+
+.pipelineRow {
+    margin-top: 4px;
+}
+
+.pipelineLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c3aed;
+    background-color: #ede9fe;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+    margin-top: auto;
+}
+
+.viewLink {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.card:hover .viewLink {
+    text-decoration: underline;
+}
+
+.statusBadge {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ativo {
+    color: #059669;
+    background-color: #d1fae5;
+}
+
+.pendente {
+    color: #d97706;
+    background-color: #fef3c7;
+}
+
+.emrevisão {
+    color: #2563eb;
+    background-color: #dbeafe;
+}

@@ -1,0 +1,760 @@
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    transition: color var(--transition-fast);
+}
+
+.backLink:hover {
+    color: var(--primary-color);
+}
+
+.profileHeader {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.avatarLarge {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-full);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mainInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nameRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nomeAtleta {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
+
+.esportePosicao {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.metaInfo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.headerActions {
+    display: flex;
+    gap: 12px;
+}
+
+.btnPrimary,
+.btnSecondary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    transition: all var(--transition-fast);
+}
+
+.btnPrimary {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.btnPrimary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btnSecondary {
+    background-color: white;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.btnSecondary:hover {
+    background-color: var(--bg-app);
+}
+
+.tabsContainer {
+    display: flex;
+    gap: 32px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 24px;
+}
+
+.tab {
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.tab:hover {
+    color: var(--text-primary);
+}
+
+.activeTab {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tabContent {
+    min-height: 400px;
+}
+
+/* Visão Geral */
+.gridVisaoGeral {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+}
+
+.cardInfo {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.gridVisaoGeral>.cardInfo:nth-child(1) {
+    grid-column: 1 / -1;
+}
+
+.gridVisaoGeral>.cardInfo:nth-child(4) {
+    grid-column: 1 / -1;
+}
+
+.cardTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--bg-app);
+}
+
+.infoGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.infoBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.infoLabel {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.infoValue {
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.bioText {
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+.socialGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.socialItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.socialIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.instagram {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.youtube {
+    background-color: #ff0000;
+}
+
+.web {
+    background-color: var(--primary-color);
+}
+
+.tiktok {
+    background-color: #010101;
+}
+
+.statusBadge {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ativo {
+    color: #059669;
+    background-color: #d1fae5;
+}
+
+.pendente {
+    color: #d97706;
+    background-color: #fef3c7;
+}
+
+.emrevisão {
+    color: #2563eb;
+    background-color: #dbeafe;
+}
+
+/* Pipeline Status */
+.pipelineStatus {
+    margin-bottom: 8px;
+}
+
+.pipelineBadge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.materiaisGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.materialItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.materialDone {
+    background-color: #d1fae5;
+    color: #059669;
+}
+
+.materialPending {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+}
+
+/* Currículo */
+.curriculoContainer {}
+
+.curriculoHeader {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.curriculoActions {
+    display: flex;
+    gap: 12px;
+}
+
+.curriculoGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.qualidadesGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.qualidadeItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.qualidadeBar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.qualidadeFill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease-out;
+}
+
+.qualidadeLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 120px;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+}
+
+.statBox {
+    text-align: center;
+    padding: 12px 8px;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-md);
+}
+
+.statBoxValue {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.statBoxLabel {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 2px;
+    text-transform: capitalize;
+}
+
+.timelineCV {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.timelineCVItem {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    position: relative;
+}
+
+.timelineCVItem:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.timelineCVDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.timelineCVContent {
+    flex: 1;
+}
+
+.timelineCVTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.timelineCVPeriod {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.timelineCVHighlight {
+    font-size: 13px;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.conquistasGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.conquistaCard {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-md);
+}
+
+.conquistaAno {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    min-width: 50px;
+}
+
+.conquistaInfo {
+    flex: 1;
+}
+
+.conquistaTitulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.conquistaDesc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Portfólio */
+.portfolioContainer {}
+
+.portfolioHero {
+    border-radius: var(--radius-lg);
+    padding: 48px 32px;
+    color: white;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.portfolioHeroContent {}
+
+.portfolioHeroAvatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0 auto 16px;
+}
+
+.portfolioHeroName {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.portfolioHeroSport {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 12px;
+}
+
+.portfolioHeroBio {
+    font-size: 14px;
+    opacity: 0.85;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.portfolioGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.photoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.photoPlaceholder {
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.photoEmoji {
+    font-size: 28px;
+}
+
+.photoLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.videosGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.videoCard {
+    display: flex;
+    gap: 14px;
+    padding: 12px;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-md);
+}
+
+.videoThumb {
+    width: 80px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.playBtn {
+    font-size: 20px;
+    opacity: 0.7;
+}
+
+.videoInfo {
+    flex: 1;
+}
+
+.videoTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.videoMeta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.quoteBlock {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 20px 24px;
+    background-color: var(--bg-app);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-bottom: 12px;
+}
+
+.quoteAuthor {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Cartão Digital */
+.cartaoContainer {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.cartaoPreviewWrap {}
+
+.cartaoPreview {
+    border-radius: 20px;
+    padding: 40px 28px;
+    color: white;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+
+.cartaoAvatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.cartaoNome {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.cartaoSport {
+    font-size: 14px;
+    opacity: 0.85;
+    margin-bottom: 2px;
+}
+
+.cartaoClub {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+}
+
+.cartaoLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.cartaoLink {
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color var(--transition-fast);
+    cursor: pointer;
+}
+
+.cartaoLink:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.cartaoQR {
+    margin-top: 8px;
+}
+
+.qrPlaceholder {
+    width: 80px;
+    height: 80px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #0f172a;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0 auto 8px;
+}
+
+.cartaoQRText {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.cartaoBrand {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-top: 16px;
+    letter-spacing: 1px;
+}
+
+.cartaoInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cardFeatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.featureItem {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.linkPreview {
+    background-color: var(--bg-app);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color);
+    word-break: break-all;
+}

@@ -1,0 +1,155 @@
+.sidebar {
+    background-color: var(--bg-sidebar);
+    color: var(--text-sidebar);
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    transition: width var(--transition-normal);
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+    border-right: 1px solid var(--border-sidebar);
+}
+
+.sidebar.collapsed {
+    width: 80px;
+}
+
+.logoContainer {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border-sidebar);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.logoIcon {
+    background: rgba(37, 99, 235, 0.15);
+    padding: 8px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    min-width: 40px;
+}
+
+.logoText {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+.logoText span {
+    color: var(--primary-color);
+    font-weight: 400;
+}
+
+.nav {
+    flex: 1;
+    padding: 24px 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.navList {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.navItem {
+    width: 100%;
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    color: var(--text-sidebar);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+}
+
+.sidebar.collapsed .navLink {
+    justify-content: center;
+}
+
+.navLink:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-sidebar-hover);
+}
+
+.navLink.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.icon {
+    flex-shrink: 0;
+}
+
+.navText {
+    margin-left: 12px;
+    font-weight: 500;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.divider {
+    height: 1px;
+    background-color: var(--border-sidebar);
+    margin: 16px 0;
+}
+
+.userProfile {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-sidebar);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    background-color: var(--accent-color);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.userInfo {
+    flex: 1;
+    overflow: hidden;
+}
+
+.userName {
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.userRole {
+    color: var(--text-sidebar);
+    font-size: 12px;
+    white-space: nowrap;
+}

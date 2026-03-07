@@ -1,0 +1,110 @@
+.header {
+    height: 72px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.leftSection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.menuButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast);
+}
+
+.menuButton:hover {
+    background-color: var(--bg-app);
+}
+
+.pageTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
+
+.rightSection {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.searchBar {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-app);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    width: 300px;
+    border: 1px solid transparent;
+    transition: border-color var(--transition-fast);
+}
+
+.searchBar:focus-within {
+    border-color: var(--primary-color);
+    background-color: var(--bg-card);
+}
+
+.searchIcon {
+    color: var(--text-secondary);
+    margin-right: 8px;
+}
+
+.searchInput {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.searchInput::placeholder {
+    color: var(--text-secondary);
+}
+
+.iconButton {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-fast);
+}
+
+.iconButton:hover {
+    background-color: var(--bg-app);
+}
+
+.badge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background-color: var(--danger-color);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+}
