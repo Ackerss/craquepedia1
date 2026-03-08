@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, ArrowLeft, Loader2, Check, User, Phone, MapPin, Instagram, Activity, Dribbble, Target, Flame, Medal, ChevronRight, ChevronLeft, Send, Edit3, Eye } from "lucide-react";
+import { Trophy, ArrowLeft, Loader2, Check, User, Phone, MapPin, Instagram, Activity, Dribbble, Target, Flame, Medal, ChevronRight, ChevronLeft, Send, Edit3, Eye, Camera } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import type { Sport, SportField } from "@/lib/supabase/types";
 import Link from "next/link";
@@ -50,6 +50,8 @@ export default function CadastroEsportePage() {
     const [success, setSuccess] = useState(false);
     const [step, setStep] = useState(1);
     const [multiSelections, setMultiSelections] = useState<Record<string, string[]>>({});
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     const [general, setGeneral] = useState({
         full_name: "",
@@ -126,6 +128,21 @@ export default function CadastroEsportePage() {
         if (!sport) return;
         setSubmitting(true);
 
+        let photoUrl: string | null = null;
+
+        // Upload da foto se fornecida
+        if (photoFile) {
+            const fileExt = photoFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${general.full_name.replace(/\s+/g, '_')}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('athlete-photos')
+                .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
+            if (!uploadError) {
+                const { data: urlData } = supabase.storage.from('athlete-photos').getPublicUrl(fileName);
+                photoUrl = urlData.publicUrl;
+            }
+        }
+
         const finalSportData = { ...sportData };
         Object.entries(multiSelections).forEach(([key, values]) => {
             finalSportData[key] = values.join(", ");
@@ -153,6 +170,7 @@ export default function CadastroEsportePage() {
                 links_video: general.links_video,
             },
             sport_data: finalSportData,
+            photo_url: photoUrl,
             status: "pendente",
         });
 
@@ -321,6 +339,46 @@ export default function CadastroEsportePage() {
                                         <input style={inputStyle} value={general.responsavel} onChange={(e) => setGeneral({ ...general, responsavel: e.target.value })} placeholder="(Apenas para menores de 18 anos)" />
                                     </div>
                                 </div>
+
+                                {/* Upload de Foto */}
+                                <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+                                    <label style={labelStyle}>Foto de Perfil</label>
+                                    <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>Envie uma foto sua em ação ou de rosto para compor seu perfil profissional.</p>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                                        <div style={{ position: "relative", width: 90, height: 90, borderRadius: "50%", overflow: "hidden", background: "#f1f5f9", border: `2.5px dashed ${photoPreview ? sport.color : "rgba(0,0,0,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer", transition: "all 0.2s" }} onClick={() => document.getElementById('photo-upload')?.click()}>
+                                            {photoPreview ? (
+                                                <img src={photoPreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                            ) : (
+                                                <Camera size={28} color="#94a3b8" />
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <button type="button" onClick={() => document.getElementById('photo-upload')?.click()} style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: sport.color, background: `${sport.color}10`, border: `1.5px solid ${sport.color}25`, cursor: "pointer", transition: "all 0.2s" }}>
+                                                {photoPreview ? "🔄 Trocar Foto" : "📷 Selecionar Foto"}
+                                            </button>
+                                            {photoFile && <p style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>{photoFile.name} ({(photoFile.size / 1024).toFixed(0)} KB)</p>}
+                                        </div>
+                                        <input
+                                            id="photo-upload"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            style={{ display: "none" }}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    if (file.size > 5 * 1024 * 1024) {
+                                                        alert("A foto deve ter no máximo 5MB.");
+                                                        return;
+                                                    }
+                                                    setPhotoFile(file);
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => setPhotoPreview(reader.result as string);
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -471,6 +529,12 @@ export default function CadastroEsportePage() {
                                         <button type="button" onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: sport.color, background: `${sport.color}10`, border: `1px solid ${sport.color}30`, borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}><Edit3 size={12} /> Editar</button>
                                     </div>
                                     <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
+                                        {photoPreview && (
+                                            <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                                                <img src={photoPreview} alt="Foto" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${sport.color}` }} />
+                                                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Foto de perfil selecionada</span>
+                                            </div>
+                                        )}
                                         {[
                                             ["Nome", general.full_name],
                                             ["Apelido", general.sport_nickname],

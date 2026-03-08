@@ -29,6 +29,7 @@ interface CurriculoData {
     conquistas: string;
     historico_esportivo: string;
     links_video: string;
+    photo_url: string;
     dados_tecnicos: Record<string, string>;
 }
 
@@ -69,6 +70,7 @@ export default function CurriculoEditorPage() {
         data_nascimento: "", idade: "", altura: "", peso: "", lateralidade: "",
         cidade: "", estado: "", telefone: "", email: "", instagram: "",
         bio: "", conquistas: "", historico_esportivo: "", links_video: "",
+        photo_url: "",
         dados_tecnicos: {},
     });
 
@@ -117,6 +119,7 @@ export default function CurriculoEditorPage() {
             conquistas: gd.conquistas || "",
             historico_esportivo: gd.historico_esportivo || "",
             links_video: gd.links_video || "",
+            photo_url: athlete.photo_url || "",
             dados_tecnicos: sd,
         };
         setCv(newCv);
@@ -352,14 +355,19 @@ export default function CurriculoEditorPage() {
 
                             <div style={{
                                 width: 110, height: 110, borderRadius: "50%",
-                                background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                                background: cv.photo_url ? "transparent" : "linear-gradient(135deg, #3b82f6, #8b5cf6)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 fontSize: 42, fontWeight: 800, color: "#fff", flexShrink: 0,
                                 boxShadow: "0 10px 30px rgba(59, 130, 246, 0.4)",
                                 border: "4px solid rgba(255,255,255,0.1)",
-                                textShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                                textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                overflow: "hidden",
                             }}>
-                                {(cv.nome_esportivo || cv.nome_completo || "?").charAt(0)}
+                                {cv.photo_url ? (
+                                    <img src={cv.photo_url} alt={cv.nome_esportivo || cv.nome_completo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                    (cv.nome_esportivo || cv.nome_completo || "?").charAt(0)
+                                )}
                             </div>
 
                             <div style={{ zIndex: 1, position: "relative" }}>

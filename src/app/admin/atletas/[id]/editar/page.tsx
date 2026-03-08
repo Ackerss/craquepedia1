@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2, Camera } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import type { Athlete, Sport, SportField } from "@/lib/supabase/types";
 
@@ -24,6 +24,8 @@ export default function EditarAtletaPage() {
     const [selectedSportId, setSelectedSportId] = useState<string>("");
     const [generalData, setGeneralData] = useState<Record<string, string>>({});
     const [sportData, setSportData] = useState<Record<string, string | number>>({});
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     useEffect(() => {
         async function load() {
@@ -48,6 +50,7 @@ export default function EditarAtletaPage() {
                 setSelectedSportId(a.sport_id);
                 setGeneralData((a.general_data || {}) as Record<string, string>);
                 setSportData((a.sport_data || {}) as Record<string, string | number>);
+                if (a.photo_url) setPhotoPreview(a.photo_url);
             }
             if (sportsRes.data) setSports(sportsRes.data);
             setLoading(false);
@@ -58,6 +61,21 @@ export default function EditarAtletaPage() {
     const handleSave = async () => {
         if (!athlete) return;
         setSaving(true);
+
+        let photoUrl = athlete.photo_url || null;
+
+        // Upload de nova foto se alterada
+        if (photoFile) {
+            const fileExt = photoFile.name.split('.').pop();
+            const fileName = `${Date.now()}_${general.full_name.replace(/\s+/g, '_')}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('athlete-photos')
+                .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
+            if (!uploadError) {
+                const { data: urlData } = supabase.storage.from('athlete-photos').getPublicUrl(fileName);
+                photoUrl = urlData.publicUrl;
+            }
+        }
 
         const newSportName = sports.find(s => s.id === selectedSportId)?.name || athlete.sport_name;
 
@@ -74,6 +92,7 @@ export default function EditarAtletaPage() {
             sport_name: newSportName,
             general_data: generalData,
             sport_data: sportData,
+            photo_url: photoUrl,
             updated_at: new Date().toISOString(),
         }).eq("id", id);
 
@@ -153,6 +172,42 @@ export default function EditarAtletaPage() {
                             <option value="inativo">Inativo</option>
                             <option value="pendente">Pendente</option>
                         </select>
+                    </div>
+                </div>
+
+                {/* Upload de Foto */}
+                <div style={{ marginTop: 16 }}>
+                    <label style={labelStyle}>Foto de Perfil</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4 }}>
+                        <div style={{ position: "relative", width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "#f1f5f9", border: `2px dashed ${photoPreview ? "var(--primary-color)" : "var(--border-color)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }} onClick={() => document.getElementById('admin-photo-upload')?.click()}>
+                            {photoPreview ? (
+                                <img src={photoPreview} alt="Foto" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                                <Camera size={24} color="#94a3b8" />
+                            )}
+                        </div>
+                        <div>
+                            <button type="button" onClick={() => document.getElementById('admin-photo-upload')?.click()} style={{ padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "var(--primary-color)", background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)", cursor: "pointer" }}>
+                                {photoPreview ? "🔄 Trocar Foto" : "📷 Selecionar Foto"}
+                            </button>
+                            {photoFile && <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4 }}>{photoFile.name}</p>}
+                        </div>
+                        <input
+                            id="admin-photo-upload"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            style={{ display: "none" }}
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    if (file.size > 5 * 1024 * 1024) { alert("Máximo 5MB."); return; }
+                                    setPhotoFile(file);
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => setPhotoPreview(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                        />
                     </div>
                 </div>
             </div>
