@@ -225,29 +225,56 @@ export default function CurriculoEditorPage() {
             <>
                 <style>{`
                     @media print {
-                        .no-print { display: none !important; }
-                        body { background: #52525b !important; } /* Fundo escuro em volta da folha A4 no monitor, mas invisible print */
+                        @page { margin: 0; size: A4 portrait; }
+                        .no-print, aside, nav, header { display: none !important; }
+                        
+                        /* Fix wrapper constraints to allow full page print */
+                        body, html, main, .flex-1, .h-screen, .overflow-y-auto { 
+                            height: auto !important; 
+                            min-height: auto !important; 
+                            overflow: visible !important; 
+                            background: white !important;
+                        }
+
+                        /* Container cinza vira branco e remove padding na impressao */
+                        .preview-bg {
+                            background: white !important;
+                            padding: 0 !important;
+                            display: block !important;
+                        }
+                        
+                        /* A folha A4 toma 100% da impressão e perde a sombra */
+                        .a4-page {
+                            box-shadow: none !important;
+                            width: 210mm !important;
+                            height: 297mm !important;
+                            min-height: 297mm !important;
+                            margin: 0 !important;
+                            position: relative !important;
+                            page-break-after: always;
+                        }
                     }
-                    /* Container cinza em volta do A4 na tela para destacar a "folha" */
-                    .preview-bg {
-                        background: #f1f5f9;
-                        min-height: 100vh;
-                        padding: 40px;
-                        display: flex;
-                        justify-content: center;
+
+                    /* Na Tela Normal: Container cinza em volta do A4 para destacar a "folha" */
+                    @media screen {
+                        .preview-bg {
+                            background: #f1f5f9;
+                            min-height: 100vh;
+                            padding: 40px;
+                            display: flex;
+                            justify-content: center;
+                        }
+                        /* Formato exato do A4 na tela (ratio 210/297) */
+                        .a4-page {
+                            width: 210mm;
+                            min-height: 297mm;
+                            background: white;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                            position: relative;
+                            overflow: hidden;
+                            font-family: inherit;
+                        }
                     }
-                    /* Formato exato do A4 na tela (ratio 210/297) */
-                    .a4-page {
-                        width: 210mm;
-                        min-height: 297mm;
-                        background: white;
-                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                        position: relative;
-                        overflow: hidden;
-                        font-family: inherit;
-                    }
-                    /* Esconder o overflow de borda em impressão para não gerar margens brancas caso a impressora force */
-                    @page { margin: 0; }
                 `}</style>
                 {/* Print Controls */}
                 <div className="no-print" style={{
