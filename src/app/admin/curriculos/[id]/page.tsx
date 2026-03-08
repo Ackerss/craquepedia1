@@ -477,15 +477,15 @@ export default function CurriculoEditorPage() {
                                 )}
 
                                 {/* Dados Técnicos Específicos */}
-                                {Object.keys(cv.dados_tecnicos).filter(k =>
-                                    k !== 'posicao' && k !== 'posicao_principal' && k !== 'categoria_peso' && k !== 'pe_dominante' && k !== 'mao_dominante' && cv.dados_tecnicos[k]
+                                {Object.keys(cv.dados_tecnicos || {}).filter(k =>
+                                    k !== 'posicao' && k !== 'posicao_principal' && k !== 'categoria_peso' && k !== 'pe_dominante' && k !== 'mao_dominante' && (cv.dados_tecnicos || {})[k as keyof typeof cv.dados_tecnicos]
                                 ).length > 0 && (
                                         <div style={{ marginBottom: 40 }}>
                                             <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748b", marginBottom: 16 }}>
                                                 Atributos Técnicos
                                             </h3>
                                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                                {Object.entries(cv.dados_tecnicos)
+                                                {Object.entries(cv.dados_tecnicos || {})
                                                     .filter(([key, value]) => key !== 'posicao' && key !== 'posicao_principal' && key !== 'categoria_peso' && key !== 'pe_dominante' && key !== 'mao_dominante' && value)
                                                     .map(([key, value]) => (
                                                         <div key={key}>
