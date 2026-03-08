@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, ClipboardList, CheckCircle, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { Users, ClipboardList, CheckCircle, AlertCircle, Loader2, ArrowRight, FileText, Palette, CreditCard, Video } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { STATUS_LABELS } from "@/lib/supabase/types";
+import { STATUS_LABELS, SERVICE_TYPES, type ServiceType } from "@/lib/supabase/types";
 
 interface DashboardStats {
     totalAthletes: number;
@@ -20,6 +20,7 @@ interface DashboardStats {
         status: string;
         created_at: string;
     }[];
+    serviceCounts: Record<string, { total: number; pendente: number; em_andamento: number; concluido: number }>;
 }
 
 export default function AdminDashboardPage() {
@@ -28,14 +29,16 @@ export default function AdminDashboardPage() {
 
     useEffect(() => {
         async function loadStats() {
-            const [athletesRes, subsRes, recentRes] = await Promise.all([
+            const [athletesRes, subsRes, recentRes, servicesRes] = await Promise.all([
                 supabase.from("athletes").select("id, sport_name", { count: "exact" }),
                 supabase.from("submissions").select("id, status, sport_name", { count: "exact" }),
                 supabase.from("submissions").select("id, full_name, sport_name, status, created_at").order("created_at", { ascending: false }).limit(8),
+                supabase.from("athlete_services").select("service_type, status"),
             ]);
 
             const submissions = subsRes.data || [];
             const athletes = athletesRes.data || [];
+            const services = servicesRes.data || [];
 
             // Sport counts from athletes
             const sportMap: Record<string, number> = {};
@@ -43,6 +46,18 @@ export default function AdminDashboardPage() {
                 sportMap[a.sport_name] = (sportMap[a.sport_name] || 0) + 1;
             });
             const sportCounts = Object.entries(sportMap).map(([sport_name, count]) => ({ sport_name, count })).sort((a, b) => b.count - a.count);
+
+            // Service counts
+            const serviceCounts: Record<string, { total: number; pendente: number; em_andamento: number; concluido: number }> = {};
+            services.forEach((s) => {
+                if (!serviceCounts[s.service_type]) {
+                    serviceCounts[s.service_type] = { total: 0, pendente: 0, em_andamento: 0, concluido: 0 };
+                }
+                serviceCounts[s.service_type].total++;
+                if (s.status === "pendente") serviceCounts[s.service_type].pendente++;
+                else if (s.status === "em_andamento") serviceCounts[s.service_type].em_andamento++;
+                else if (s.status === "concluido") serviceCounts[s.service_type].concluido++;
+            });
 
             setStats({
                 totalAthletes: athletesRes.count || 0,
@@ -52,6 +67,7 @@ export default function AdminDashboardPage() {
                 rejectedSubmissions: submissions.filter((s) => s.status === "rejeitado").length,
                 sportCounts,
                 recentSubmissions: recentRes.data || [],
+                serviceCounts,
             });
             setLoading(false);
         }
@@ -76,6 +92,20 @@ export default function AdminDashboardPage() {
         { label: "Aprovados", value: stats.approvedSubmissions, icon: CheckCircle, color: "#10b981", bg: "rgba(16,185,129,0.1)" },
     ];
 
+    const serviceIcons: Record<string, React.ReactNode> = {
+        curriculo: <FileText size={16} />,
+        portfolio: <Palette size={16} />,
+        cartao: <CreditCard size={16} />,
+        video: <Video size={16} />,
+    };
+
+    const serviceLinks: Record<string, string> = {
+        curriculo: "/admin/curriculos",
+        portfolio: "/admin/portfolios",
+        cartao: "/admin/cartoes",
+        video: "/admin/videos",
+    };
+
     return (
         <div style={{ padding: "28px 32px", maxWidth: 1200, margin: "0 auto" }} className="animate-fade-in">
             <div style={{ marginBottom: 32 }}>
@@ -98,6 +128,51 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Progresso dos Serviços */}
+            <div style={{ background: "#fff", borderRadius: 14, boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-color)", overflow: "hidden", marginBottom: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px", borderBottom: "1px solid var(--border-color)" }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700 }}>📊 Progresso dos Serviços</h3>
+                    <Link href="/admin/entregas" style={{ fontSize: 12, color: "var(--primary-color)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                        Ver detalhes <ArrowRight size={14} />
+                    </Link>
+                </div>
+                <div style={{ padding: "16px 24px" }}>
+                    {(["curriculo", "portfolio", "cartao", "video"] as ServiceType[]).map((type) => {
+                        const data = stats.serviceCounts[type] || { total: 0, pendente: 0, em_andamento: 0, concluido: 0 };
+                        const pct = data.total > 0 ? Math.round((data.concluido / data.total) * 100) : 0;
+                        return (
+                            <Link key={type} href={serviceLinks[type]} style={{ textDecoration: "none", color: "inherit" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0", borderBottom: "1px solid #f8fafc" }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(37,99,235,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary-color)" }}>
+                                        {serviceIcons[type]}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                            <span style={{ fontSize: 13, fontWeight: 600 }}>{SERVICE_TYPES[type].label}</span>
+                                            <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                                                <span style={{ color: "#f59e0b" }}>🟡 {data.pendente}</span>
+                                                <span style={{ color: "#3b82f6" }}>🔵 {data.em_andamento}</span>
+                                                <span style={{ color: "#10b981" }}>✅ {data.concluido}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
+                                            <div style={{
+                                                width: `${pct}%`, height: "100%",
+                                                background: pct === 100 ? "#10b981" : "var(--primary-color)",
+                                                borderRadius: 3, transition: "width 0.5s",
+                                            }} />
+                                        </div>
+                                    </div>
+                                    <span style={{ fontSize: 13, fontWeight: 800, color: pct === 100 ? "#10b981" : "var(--primary-color)", minWidth: 40, textAlign: "right" }}>
+                                        {pct}%
+                                    </span>
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>

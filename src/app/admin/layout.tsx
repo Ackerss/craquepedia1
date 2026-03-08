@@ -5,15 +5,35 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import {
-    Trophy, LayoutDashboard, ClipboardList, Users, Plus,
-    LogOut, Menu, X, ChevronRight
+    Trophy, LayoutDashboard, ClipboardList, Users,
+    LogOut, Menu, X, ChevronRight, FileText,
+    Palette, CreditCard, Video, CheckSquare
 } from "lucide-react";
 
-const NAV_ITEMS = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/cadastros", label: "Cadastros Recebidos", icon: ClipboardList },
-    { href: "/admin/atletas", label: "Atletas", icon: Users },
-    { href: "/admin/atletas/novo", label: "Novo Atleta", icon: Plus },
+const NAV_SECTIONS = [
+    {
+        title: "GESTÃO",
+        items: [
+            { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/admin/atletas", label: "Atletas", icon: Users },
+            { href: "/admin/cadastros", label: "Cadastros Recebidos", icon: ClipboardList },
+        ],
+    },
+    {
+        title: "SERVIÇOS",
+        items: [
+            { href: "/admin/curriculos", label: "Currículos", icon: FileText },
+            { href: "/admin/portfolios", label: "Portfólios", icon: Palette },
+            { href: "/admin/cartoes", label: "Cartões", icon: CreditCard },
+            { href: "/admin/videos", label: "Vídeos", icon: Video },
+        ],
+    },
+    {
+        title: "VISÃO GERAL",
+        items: [
+            { href: "/admin/entregas", label: "Entregas / Status", icon: CheckSquare },
+        ],
+    },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +57,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         await supabase.auth.signOut();
         router.push("/admin/login");
         router.refresh();
+    };
+
+    const isActiveLink = (href: string) => {
+        if (href === "/admin") return pathname === "/admin";
+        return pathname === href || pathname.startsWith(href + "/");
     };
 
     return (
@@ -66,36 +91,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </span>
                 </div>
 
-                {/* Nav */}
-                <nav style={{ flex: 1, padding: "16px 12px" }}>
-                    {NAV_ITEMS.map((item) => {
-                        const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 12,
-                                    padding: "12px 16px",
-                                    borderRadius: 10,
-                                    marginBottom: 4,
-                                    fontWeight: isActive ? 600 : 400,
-                                    fontSize: 14,
-                                    color: isActive ? "#fff" : "var(--text-sidebar)",
-                                    background: isActive ? "rgba(37, 99, 235, 0.2)" : "transparent",
-                                    textDecoration: "none",
-                                    transition: "all 0.2s",
-                                    whiteSpace: "nowrap",
-                                }}
-                            >
-                                <item.icon size={18} />
-                                {item.label}
-                                {isActive && <ChevronRight size={14} style={{ marginLeft: "auto" }} />}
-                            </Link>
-                        );
-                    })}
+                {/* Nav Sections */}
+                <nav style={{ flex: 1, padding: "8px 12px", overflowY: "auto" }}>
+                    {NAV_SECTIONS.map((section, sIdx) => (
+                        <div key={section.title}>
+                            {sIdx > 0 && (
+                                <div style={{ height: 1, background: "var(--border-sidebar)", margin: "8px 16px" }} />
+                            )}
+                            <p style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: "1.2px",
+                                color: "rgba(148, 163, 184, 0.6)",
+                                padding: "12px 16px 6px",
+                                whiteSpace: "nowrap",
+                            }}>
+                                {section.title}
+                            </p>
+                            {section.items.map((item) => {
+                                const isActive = isActiveLink(item.href);
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 12,
+                                            padding: "10px 16px",
+                                            borderRadius: 10,
+                                            marginBottom: 2,
+                                            fontWeight: isActive ? 600 : 400,
+                                            fontSize: 13,
+                                            color: isActive ? "#fff" : "var(--text-sidebar)",
+                                            background: isActive ? "rgba(37, 99, 235, 0.2)" : "transparent",
+                                            textDecoration: "none",
+                                            transition: "all 0.2s",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        <item.icon size={17} />
+                                        {item.label}
+                                        {isActive && <ChevronRight size={14} style={{ marginLeft: "auto" }} />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </nav>
 
                 {/* Link para formulário público */}
@@ -170,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </button>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         <Link
-                            href="/admin/atletas/novo"
+                            href="/admin/atletas"
                             style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -184,7 +226,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 textDecoration: "none",
                             }}
                         >
-                            <Plus size={16} /> Novo Atleta
+                            <Users size={16} /> Atletas
                         </Link>
                     </div>
                 </header>

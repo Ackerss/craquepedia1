@@ -70,7 +70,7 @@ export default function RevisaoCadastroPage() {
 
         if (!error) {
             if (newStatus === "aprovado" && submission) {
-                await supabase.from("athletes").insert({
+                const { data: newAthlete } = await supabase.from("athletes").insert({
                     submission_id: submission.id,
                     sport_id: submission.sport_id,
                     sport_name: submission.sport_name,
@@ -84,7 +84,19 @@ export default function RevisaoCadastroPage() {
                     general_data: submission.general_data,
                     sport_data: submission.sport_data,
                     status: "ativo",
-                });
+                }).select("id").single();
+
+                // Criar registros de serviço para o novo atleta
+                if (newAthlete) {
+                    const serviceTypes = ["formulario", "curriculo", "portfolio", "cartao", "video", "youtube"];
+                    await supabase.from("athlete_services").insert(
+                        serviceTypes.map((type) => ({
+                            athlete_id: newAthlete.id,
+                            service_type: type,
+                            status: type === "formulario" ? "concluido" : "pendente",
+                        }))
+                    );
+                }
             }
             setSubmission({ ...submission!, status: newStatus as Submission["status"], admin_notes: notes });
         }
