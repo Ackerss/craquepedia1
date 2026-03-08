@@ -20,6 +20,7 @@ const SPORT_DESCRIPTIONS: Record<string, string> = {
     ginastica: "Registre aparelhos, notas e competições da ginástica",
     tenis: "Documente ranking, torneios e evolução no tênis",
     ciclismo: "Registre distâncias, tempos e competições no ciclismo",
+    surf: "Documente suas ondas, campeonatos e evolução no surf",
 };
 
 // Mapeamento de slug do esporte para o arquivo de imagem do Stitch
@@ -36,6 +37,7 @@ const SPORT_IMAGES: Record<string, string> = {
     ginastica: "/sports/ginastica.png",
     tenis: "/sports/tenis.png",
     ciclismo: "/sports/ciclismo.png",
+    surf: "/sports/surf.png",
 };
 
 export default function CadastroPage() {
@@ -220,7 +222,7 @@ export default function CadastroPage() {
                                 {/* Imagem artística do Stitch */}
                                 <div style={{
                                     width: "100%",
-                                    height: 180,
+                                    height: 130,
                                     position: "relative",
                                     overflow: "hidden",
                                     background: "linear-gradient(135deg, #1a1a2e, #16213e)",
