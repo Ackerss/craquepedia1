@@ -122,6 +122,8 @@ export default function CadastroEsportePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        // Só permite enviar na etapa de revisão (step 4)
+        if (step !== 4) return;
         if (!sport) return;
         setSubmitting(true);
 
