@@ -192,162 +192,299 @@ export default function CurriculoEditorPage() {
         textTransform: "uppercase", letterSpacing: "0.5px",
     };
 
+    const [isExporting, setIsExporting] = useState(false);
+
     // PREVIEW MODE
     if (showPreview) {
+        const exportToPDF = async () => {
+            if (!printRef.current) return;
+            setIsExporting(true);
+            try {
+                // Importa dinamicamente para evitar erro de 'window is not defined' no SSR (Next.js)
+                const html2pdf = (await import("html2pdf.js")).default;
+
+                const element = printRef.current;
+                const opt = {
+                    margin: 0,
+                    filename: `${cv.nome_esportivo || cv.nome_completo || "Atleta"}_Curriculo.pdf`.replace(/\s+/g, '_'),
+                    image: { type: 'jpeg' as const, quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                    jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
+                };
+
+                await html2pdf().set(opt).from(element).save();
+            } catch (error) {
+                console.error("Erro ao gerar PDF:", error);
+                alert("Ocorreu um erro ao gerar o PDF. Tente novamente.");
+            } finally {
+                setIsExporting(false);
+            }
+        };
+
         return (
             <>
                 <style>{`
                     @media print {
                         .no-print { display: none !important; }
-                        body { background: white !important; }
+                        body { background: #52525b !important; } /* Fundo escuro em volta da folha A4 no monitor, mas invisible print */
                     }
+                    /* Container cinza em volta do A4 na tela para destacar a "folha" */
+                    .preview-bg {
+                        background: #f1f5f9;
+                        min-height: 100vh;
+                        padding: 40px;
+                        display: flex;
+                        justify-content: center;
+                    }
+                    /* Formato exato do A4 na tela (ratio 210/297) */
+                    .a4-page {
+                        width: 210mm;
+                        min-height: 297mm;
+                        background: white;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                        position: relative;
+                        overflow: hidden;
+                        font-family: inherit;
+                    }
+                    /* Esconder o overflow de borda em impressão para não gerar margens brancas caso a impressora force */
+                    @page { margin: 0; }
                 `}</style>
                 {/* Print Controls */}
                 <div className="no-print" style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
                     padding: "16px 32px", background: "#fff", borderBottom: "1px solid var(--border-color)",
+                    position: "sticky", top: 0, zIndex: 50, boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
                 }}>
-                    <button onClick={() => setShowPreview(false)} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border-color)", cursor: "pointer", background: "#fff" }}>
+                    <button onClick={() => setShowPreview(false)} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border-color)", cursor: "pointer", background: "#fff", transition: "0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>
                         <ArrowLeft size={16} /> Voltar ao Editor
                     </button>
                     <div style={{ display: "flex", gap: 12 }}>
-                        <button onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#fff", border: "1.5px solid var(--border-color)", cursor: "pointer" }}>
-                            <Printer size={16} /> Imprimir A4
+                        <button onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, background: "#fff", border: "1.5px solid var(--border-color)", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>
+                            <Printer size={16} /> Imprimir (Navegador)
                         </button>
-                        <button onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "var(--primary-color)", color: "#fff", border: "none", cursor: "pointer" }}>
-                            <FileDown size={16} /> Salvar PDF
+                        <button onClick={exportToPDF} disabled={isExporting} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg, var(--primary-color), #7c3aed)", color: "#fff", border: "none", cursor: isExporting ? "wait" : "pointer", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)", opacity: isExporting ? 0.7 : 1 }}>
+                            {isExporting ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <FileDown size={16} />}
+                            {isExporting ? "Gerando PDF..." : "Salvar PDF Perfeito"}
                         </button>
                     </div>
                 </div>
 
-                {/* CV Preview */}
-                <div ref={printRef} style={{ maxWidth: 800, margin: "32px auto", background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-                    {/* Header */}
-                    <div style={{ background: "linear-gradient(135deg, #0f172a, #1e3a5f)", color: "#fff", padding: "40px 48px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                {/* CV Preview Background Container */}
+                <div className="preview-bg">
+                    {/* The A4 Page */}
+                    <div ref={printRef} className="a4-page">
+
+                        {/* Header Premium Scout */}
+                        <div style={{
+                            position: "relative",
+                            background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                            color: "#fff",
+                            padding: "50px 60px",
+                            display: "flex", alignItems: "center", gap: 32,
+                            boxShadow: "inset 0 -10px 20px rgba(0,0,0,0.1)"
+                        }}>
+                            {/* Decorative element */}
+                            <div style={{ position: "absolute", right: -50, top: -50, width: 250, height: 250, background: "rgba(255,255,255,0.02)", borderRadius: "50%" }}></div>
+                            <div style={{ position: "absolute", right: 100, bottom: -20, width: 100, height: 100, border: "2px solid rgba(255,255,255,0.05)", borderRadius: "50%" }}></div>
+
                             <div style={{
-                                width: 80, height: 80, borderRadius: "50%",
-                                background: "linear-gradient(135deg, var(--primary-color), #7c3aed)",
+                                width: 110, height: 110, borderRadius: "50%",
+                                background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 32, fontWeight: 800, color: "#fff", flexShrink: 0,
+                                fontSize: 42, fontWeight: 800, color: "#fff", flexShrink: 0,
+                                boxShadow: "0 10px 30px rgba(59, 130, 246, 0.4)",
+                                border: "4px solid rgba(255,255,255,0.1)",
+                                textShadow: "0 2px 4px rgba(0,0,0,0.2)"
                             }}>
                                 {(cv.nome_esportivo || cv.nome_completo || "?").charAt(0)}
                             </div>
-                            <div>
-                                <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>
+
+                            <div style={{ zIndex: 1, position: "relative" }}>
+                                <div style={{ display: "inline-block", padding: "4px 12px", background: "rgba(59, 130, 246, 0.2)", border: "1px solid rgba(59, 130, 246, 0.4)", color: "#93c5fd", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 12 }}>
+                                    {cv.modalidade || "Modalidade Não Informada"}
+                                </div>
+                                <h1 style={{ fontSize: 38, fontWeight: 800, marginBottom: 8, letterSpacing: "-0.5px", textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
                                     {cv.nome_esportivo || cv.nome_completo}
                                 </h1>
-                                <h2 style={{ fontSize: 16, fontWeight: 400, opacity: 0.8, marginBottom: 12 }}>
-                                    {cv.modalidade} {cv.posicao ? `• ${cv.posicao}` : ""}
-                                </h2>
-                                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                                    {cv.idade && <span style={{ padding: "4px 12px", borderRadius: 20, background: "rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 600 }}>{cv.idade} anos</span>}
-                                    {cv.altura && <span style={{ padding: "4px 12px", borderRadius: 20, background: "rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 600 }}>{cv.altura}</span>}
-                                    {cv.peso && <span style={{ padding: "4px 12px", borderRadius: 20, background: "rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 600 }}>{cv.peso}</span>}
-                                    {cv.lateralidade && <span style={{ padding: "4px 12px", borderRadius: 20, background: "rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 600 }}>{cv.lateralidade}</span>}
-                                </div>
+                                {cv.posicao && (
+                                    <h2 style={{ fontSize: 18, fontWeight: 400, color: "#cbd5e1", display: "flex", alignItems: "center", gap: 10 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }}></div>
+                                        {cv.posicao}
+                                    </h2>
+                                )}
                             </div>
                         </div>
-                    </div>
 
-                    {/* Body */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: 400 }}>
-                        {/* Main */}
-                        <div style={{ padding: "32px 40px" }}>
-                            {cv.bio && (
-                                <div style={{ marginBottom: 28 }}>
-                                    <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--primary-color)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                        <User size={16} /> Apresentação
-                                    </h3>
-                                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#475569", whiteSpace: "pre-wrap" }}>{cv.bio}</p>
-                                </div>
-                            )}
-                            {cv.historico_esportivo && (
-                                <div style={{ marginBottom: 28 }}>
-                                    <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--primary-color)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Activity size={16} /> Histórico Esportivo
-                                    </h3>
-                                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#475569", whiteSpace: "pre-wrap" }}>{cv.historico_esportivo}</p>
-                                </div>
-                            )}
-                            {cv.conquistas && (
-                                <div style={{ marginBottom: 28 }}>
-                                    <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--primary-color)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Trophy size={16} /> Conquistas
-                                    </h3>
-                                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "#475569", whiteSpace: "pre-wrap" }}>{cv.conquistas}</p>
-                                </div>
-                            )}
-                            {/* Dados Técnicos */}
-                            {Object.keys(cv.dados_tecnicos).length > 0 && (
-                                <div>
-                                    <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--primary-color)", marginBottom: 12 }}>
-                                        Dados Técnicos
-                                    </h3>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
-                                        {Object.entries(cv.dados_tecnicos).map(([key, value]) => (
-                                            value && (
-                                                <div key={key} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
-                                                    <span style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600 }}>{key.replace(/_/g, " ")}</span>
-                                                    <p style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>{String(value)}</p>
-                                                </div>
-                                            )
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Sidebar */}
-                        <div style={{ background: "#f8fafc", padding: "32px 24px", borderLeft: "1px solid var(--border-color)" }}>
-                            <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#475569", marginBottom: 16 }}>Contato</h3>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                                {(cv.cidade || cv.estado) && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <MapPin size={14} color="var(--primary-color)" />
-                                        <span style={{ fontSize: 13 }}>{cv.cidade}{cv.estado ? `, ${cv.estado}` : ""}</span>
+                        {/* Physical Profile Highlight Bar */}
+                        <div style={{
+                            background: "#2563eb",
+                            color: "white",
+                            padding: "16px 60px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}>
+                            <div style={{ display: "flex", gap: "48px" }}>
+                                {cv.idade && (
+                                    <div>
+                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Idade</p>
+                                        <p style={{ fontSize: 16, fontWeight: 800 }}>{cv.idade} <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.9 }}>anos</span></p>
                                     </div>
                                 )}
-                                {cv.telefone && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Phone size={14} color="var(--primary-color)" />
-                                        <span style={{ fontSize: 13 }}>{cv.telefone}</span>
+                                {cv.altura && (
+                                    <div>
+                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Altura</p>
+                                        <p style={{ fontSize: 16, fontWeight: 800 }}>{cv.altura}</p>
                                     </div>
                                 )}
-                                {cv.email && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Mail size={14} color="var(--primary-color)" />
-                                        <span style={{ fontSize: 13 }}>{cv.email}</span>
+                                {cv.peso && (
+                                    <div>
+                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Peso</p>
+                                        <p style={{ fontSize: 16, fontWeight: 800 }}>{cv.peso}</p>
                                     </div>
                                 )}
-                                {cv.instagram && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <span style={{ fontSize: 14 }}>📸</span>
-                                        <span style={{ fontSize: 13 }}>{cv.instagram}</span>
+                                {cv.lateralidade && (
+                                    <div>
+                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Pé / Mão Dominante</p>
+                                        <p style={{ fontSize: 16, fontWeight: 800, textTransform: "capitalize" }}>{cv.lateralidade}</p>
                                     </div>
                                 )}
                             </div>
-                            {cv.data_nascimento && (
-                                <div style={{ marginTop: 24 }}>
-                                    <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#475569", marginBottom: 12 }}>Dados Pessoais</h3>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                        <Calendar size={14} color="var(--primary-color)" />
-                                        <span style={{ fontSize: 13 }}>{cv.data_nascimento}</span>
+                        </div>
+
+                        {/* Main Body Grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "calc(297mm - 270px)" }}> /* Subtrai Header (aprox 200px) e Bar (aprox 70px) */
+
+                            {/* Left Column (Main Content) */}
+                            <div style={{ padding: "40px 50px 40px 60px" }}>
+
+                                {cv.bio && (
+                                    <div style={{ marginBottom: 36 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(37,99,235,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563eb" }}>
+                                                <User size={16} />
+                                            </div>
+                                            <h3 style={{ fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#0f172a" }}>
+                                                Apresentação
+                                            </h3>
+                                        </div>
+                                        <p style={{ fontSize: 14, lineHeight: 1.8, color: "#334155", textAlign: "justify" }}>{cv.bio}</p>
                                     </div>
+                                )}
+
+                                {cv.historico_esportivo && (
+                                    <div style={{ marginBottom: 36 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(37,99,235,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563eb" }}>
+                                                <Activity size={16} />
+                                            </div>
+                                            <h3 style={{ fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#0f172a" }}>
+                                                Histórico Esportivo
+                                            </h3>
+                                        </div>
+                                        <div style={{ paddingLeft: 16, borderLeft: "2px solid #e2e8f0" }}>
+                                            <p style={{ fontSize: 14, lineHeight: 1.8, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.historico_esportivo}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {cv.conquistas && (
+                                    <div style={{ marginBottom: 36 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#d97706" }}>
+                                                <Trophy size={16} />
+                                            </div>
+                                            <h3 style={{ fontSize: 16, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#0f172a" }}>
+                                                Conquistas Principais
+                                            </h3>
+                                        </div>
+                                        <div style={{ background: "#fafafa", borderRadius: 12, padding: "20px 24px", border: "1px solid #e2e8f0" }}>
+                                            <p style={{ fontSize: 14, lineHeight: 1.8, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.conquistas}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right Column (Sidebar) */}
+                            <div style={{ background: "#f8fafc", borderLeft: "1px solid #e2e8f0", padding: "40px" }}>
+
+                                <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748b", marginBottom: 20 }}>Contato</h3>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
+                                    {(cv.cidade || cv.estado) && (
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            <MapPin size={16} color="#3b82f6" style={{ marginTop: 2, flexShrink: 0 }} />
+                                            <span style={{ fontSize: 13, color: "#334155", lineHeight: 1.5 }}>{cv.cidade}{cv.cidade && cv.estado ? " - " : ""}{cv.estado}</span>
+                                        </div>
+                                    )}
+                                    {cv.telefone && (
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            <Phone size={16} color="#3b82f6" style={{ marginTop: 2, flexShrink: 0 }} />
+                                            <span style={{ fontSize: 13, color: "#334155", lineHeight: 1.5 }}>{cv.telefone}</span>
+                                        </div>
+                                    )}
+                                    {cv.email && (
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            <Mail size={16} color="#3b82f6" style={{ marginTop: 2, flexShrink: 0 }} />
+                                            <span style={{ fontSize: 13, color: "#334155", lineHeight: 1.5, wordBreak: "break-all" }}>{cv.email}</span>
+                                        </div>
+                                    )}
+                                    {cv.instagram && (
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            <span style={{ fontSize: 15, width: 16, textAlign: "center", color: "#3b82f6" }}>📸</span>
+                                            <span style={{ fontSize: 13, color: "#334155", lineHeight: 1.5 }}>{cv.instagram}</span>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                            {cv.links_video && (
-                                <div style={{ marginTop: 24 }}>
-                                    <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#475569", marginBottom: 12 }}>Links de Vídeos</h3>
-                                    <p style={{ fontSize: 12, color: "#475569", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{cv.links_video}</p>
+
+                                {cv.data_nascimento && (
+                                    <div style={{ marginBottom: 40 }}>
+                                        <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748b", marginBottom: 16 }}>Dados Pessoais</h3>
+                                        <div style={{ display: "flex", gap: 12 }}>
+                                            <Calendar size={16} color="#3b82f6" style={{ marginTop: 2, flexShrink: 0 }} />
+                                            <div>
+                                                <p style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", marginBottom: 2 }}>Nascimento</p>
+                                                <p style={{ fontSize: 13, color: "#334155", fontWeight: 500 }}>{cv.data_nascimento}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Dados Técnicos Específicos */}
+                                {Object.keys(cv.dados_tecnicos).filter(k =>
+                                    k !== 'posicao' && k !== 'posicao_principal' && k !== 'categoria_peso' && k !== 'pe_dominante' && k !== 'mao_dominante' && cv.dados_tecnicos[k]
+                                ).length > 0 && (
+                                        <div style={{ marginBottom: 40 }}>
+                                            <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748b", marginBottom: 16 }}>
+                                                Atributos Técnicos
+                                            </h3>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                                {Object.entries(cv.dados_tecnicos)
+                                                    .filter(([key, value]) => key !== 'posicao' && key !== 'posicao_principal' && key !== 'categoria_peso' && key !== 'pe_dominante' && key !== 'mao_dominante' && value)
+                                                    .map(([key, value]) => (
+                                                        <div key={key}>
+                                                            <span style={{ display: "block", fontSize: 10, color: "#94a3b8", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px", marginBottom: 4 }}>{key.replace(/_/g, " ")}</span>
+                                                            <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{String(value)}</p>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                {cv.links_video && (
+                                    <div style={{ marginBottom: 40, background: "#fff", padding: 20, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                                        <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", color: "#64748b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                                            Vídeos & Links
+                                        </h3>
+                                        <p style={{ fontSize: 11, color: "#3b82f6", whiteSpace: "pre-wrap", wordBreak: "break-all", fontWeight: 500 }}>{cv.links_video}</p>
+                                    </div>
+                                )}
+
+                                {/* Watermark Footer dentro do A4 */}
+                                <div style={{ position: "absolute", bottom: 40, right: 40, background: "#fff", padding: "12px 20px", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                                    <p style={{ fontSize: 13, fontWeight: 800, letterSpacing: "1px", color: "#0f172a" }}>
+                                        CRAQUE<span style={{ color: "#2563eb" }}>PEDIA</span>
+                                    </p>
                                 </div>
-                            )}
-                            {/* Craquepedia Branding */}
-                            <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--border-color)", textAlign: "center" }}>
-                                <p style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: "1px" }}>
-                                    CRAQUE<span style={{ color: "var(--primary-color)" }}>PEDIA</span>
-                                </p>
-                                <p style={{ fontSize: 10, color: "#cbd5e1", marginTop: 4 }}>Gestão Esportiva Profissional</p>
                             </div>
                         </div>
                     </div>
