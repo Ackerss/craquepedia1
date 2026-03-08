@@ -153,6 +153,18 @@ export default function RevisaoCadastroPage() {
     const statusInfo = STATUS_LABELS[submission.status] || STATUS_LABELS.pendente;
     const generalData = (submission.general_data || {}) as Record<string, string>;
     const sportData = (submission.sport_data || {}) as Record<string, unknown>;
+    const photoUrl = (submission as unknown as Record<string, unknown>).photo_url as string | null;
+
+    const formatPhoneForWhatsApp = (phone: string) => {
+        const digits = phone.replace(/\D/g, "");
+        if (digits.startsWith("55")) return digits;
+        if (digits.length >= 10) return "55" + digits;
+        return digits;
+    };
+
+    const whatsappLink = submission.phone
+        ? `https://wa.me/${formatPhoneForWhatsApp(submission.phone)}?text=${encodeURIComponent(`Olá ${submission.full_name}! 👋\n\nSomos da *CRAQUEPEDIA* e recebemos seu cadastro como atleta de *${submission.sport_name}*.\n\nGostaríamos de conversar sobre o seu perfil esportivo. Podemos falar agora?`)}`
+        : null;
 
     const inputStyle: React.CSSProperties = {
         width: "100%", padding: "10px 14px", borderRadius: 8,
@@ -217,15 +229,29 @@ export default function RevisaoCadastroPage() {
                     <Link href="/admin/cadastros" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, fontWeight: 500 }}>
                         <ArrowLeft size={16} /> Voltar aos cadastros
                     </Link>
-                    <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>{submission.full_name}</h1>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{submission.sport_name}</span>
-                        <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusInfo.bg, color: statusInfo.color }}>
-                            {statusInfo.label}
-                        </span>
-                        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                            Recebido em {new Date(submission.created_at).toLocaleDateString("pt-BR")}
-                        </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+                        {photoUrl ? (
+                            <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", border: "3px solid var(--primary-color)", flexShrink: 0, boxShadow: "0 4px 12px rgba(37,99,235,0.2)" }}>
+                                <img src={photoUrl} alt={submission.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                        ) : (
+                            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, var(--primary-color), #7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 22, flexShrink: 0 }}>
+                                {submission.full_name.charAt(0)}
+                            </div>
+                        )}
+                        <div>
+                            <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>{submission.full_name}</h1>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{submission.sport_name}</span>
+                                <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusInfo.bg, color: statusInfo.color }}>
+                                    {statusInfo.label}
+                                </span>
+                                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                                    Recebido em {new Date(submission.created_at).toLocaleDateString("pt-BR")}
+                                </span>
+                                {photoUrl && <span style={{ fontSize: 11, color: "#10b981", fontWeight: 600 }}>📷 Com foto</span>}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -272,6 +298,11 @@ export default function RevisaoCadastroPage() {
                             {renderFlatField("Cidade", submission.city || "", "city")}
                             {renderFlatField("Estado", submission.state || "", "state")}
                         </div>
+                        {whatsappLink && (
+                            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: "#25D366", color: "#fff", textDecoration: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(37,211,102,0.3)", transition: "all 0.2s" }}>
+                                💬 Enviar Mensagem no WhatsApp
+                            </a>
+                        )}
                     </div>
 
                     {/* Redes sociais */}
@@ -392,6 +423,15 @@ export default function RevisaoCadastroPage() {
                             >
                                 <XCircle size={18} /> Reprovar Perfil
                             </button>
+                            {whatsappLink && (
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" style={{
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
+                                    background: "#25D366", color: "#fff", width: "100%", justifyContent: "center", transition: "all 0.2s", textDecoration: "none",
+                                    boxShadow: "0 4px 12px rgba(37,211,102,0.3)"
+                                }}>
+                                    💬 WhatsApp do Atleta
+                                </a>
+                            )}
                         </div>
                     </div>
 

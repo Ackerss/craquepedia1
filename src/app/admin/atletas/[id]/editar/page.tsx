@@ -143,9 +143,21 @@ export default function EditarAtletaPage() {
                     <h1 style={{ fontSize: 26, fontWeight: 800 }}>{athlete.sport_nickname || athlete.full_name}</h1>
                     <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{athlete.sport_name}</p>
                 </div>
-                <button onClick={handleDelete} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ef4444", border: "1px solid #ef444440", cursor: "pointer", background: "rgba(239,68,68,0.05)" }}>
-                    <Trash2 size={14} /> Excluir
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                    {general.phone && (() => {
+                        const digits = general.phone.replace(/\D/g, "");
+                        const whatsNum = digits.startsWith("55") ? digits : (digits.length >= 10 ? "55" + digits : digits);
+                        const msg = encodeURIComponent(`Olá ${general.full_name}! 👋\n\nSomos da *CRAQUEPEDIA*. Gostaríamos de conversar sobre o seu perfil esportivo de *${athlete.sport_name}*.\n\nPodemos falar agora?`);
+                        return (
+                            <a href={`https://wa.me/${whatsNum}?text=${msg}`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: "#25D366", textDecoration: "none", boxShadow: "0 2px 8px rgba(37,211,102,0.3)" }}>
+                                💬 WhatsApp
+                            </a>
+                        );
+                    })()}
+                    <button onClick={handleDelete} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ef4444", border: "1px solid #ef444440", cursor: "pointer", background: "rgba(239,68,68,0.05)" }}>
+                        <Trash2 size={14} /> Excluir
+                    </button>
+                </div>
             </div>
 
             {/* Dados pessoais */}

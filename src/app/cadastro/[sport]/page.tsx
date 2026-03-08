@@ -108,7 +108,12 @@ export default function CadastroEsportePage() {
                 return;
             }
         } else if (step === 2) {
-            if (!general.phone || !general.email || !general.city || !general.state) {
+            const phoneDigits = general.phone.replace(/\D/g, "");
+            if (!general.phone || phoneDigits.length < 10) {
+                alert("WhatsApp com DDD é obrigatório e deve ter pelo menos 10 dígitos. Ex: (11) 99999-0000");
+                return;
+            }
+            if (!general.email || !general.city || !general.state) {
                 alert("Por favor, preencha todos os campos obrigatórios (*).");
                 return;
             }
