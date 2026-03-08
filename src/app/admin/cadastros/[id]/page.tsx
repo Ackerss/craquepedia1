@@ -83,6 +83,7 @@ export default function RevisaoCadastroPage() {
                     state: submission.state,
                     general_data: submission.general_data,
                     sport_data: submission.sport_data,
+                    photo_url: (submission as unknown as Record<string, unknown>).photo_url as string || null,
                     status: "ativo",
                 }).select("id").single();
 
