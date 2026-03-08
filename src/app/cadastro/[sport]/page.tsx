@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, ArrowLeft, Loader2, Check, User, Phone, MapPin, Instagram, Activity, Dribbble, Target, Flame, Medal, ChevronRight, ChevronLeft } from "lucide-react";
+import { Trophy, ArrowLeft, Loader2, Check, User, Phone, MapPin, Instagram, Activity, Dribbble, Target, Flame, Medal, ChevronRight, ChevronLeft, Send, Edit3, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import type { Sport, SportField } from "@/lib/supabase/types";
 import Link from "next/link";
@@ -35,8 +35,8 @@ const getFallbackIcon = (slug: string, color: string) => {
 const STEPS = [
     { id: 1, label: "Dados Pessoais", icon: User },
     { id: 2, label: "Contato e Local", icon: MapPin },
-    { id: 3, label: "Mídia e Trajetória", icon: Instagram },
-    { id: 4, label: "Dados da Modalidade", icon: Activity },
+    { id: 3, label: "Dados Esportivos", icon: Activity },
+    { id: 4, label: "Revisão & Envio", icon: Eye },
 ];
 
 export default function CadastroEsportePage() {
@@ -359,6 +359,7 @@ export default function CadastroEsportePage() {
 
                     {step === 3 && (
                         <div className="animate-fade-in">
+                            {/* Mídia e Trajetória */}
                             <div style={sectionStyle}>
                                 <h2 style={sectionTitleStyle}>
                                     <div style={{ background: `${sport.color}15`, padding: 8, borderRadius: 10, color: sport.color }}><Instagram size={22} /></div>
@@ -394,11 +395,8 @@ export default function CadastroEsportePage() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    {step === 4 && (
-                        <div className="animate-fade-in">
+                            {/* Dados Técnicos + Altura/Peso */}
                             <div style={sectionStyle}>
                                 <h2 style={sectionTitleStyle}>
                                     <div style={{ background: `${sport.color}15`, padding: 8, borderRadius: 10, color: sport.color }}><Activity size={22} /></div>
@@ -415,36 +413,130 @@ export default function CadastroEsportePage() {
                                         <input style={inputStyle} value={general.peso} onChange={(e) => setGeneral({ ...general, peso: e.target.value })} placeholder="Ex: 75kg" />
                                     </div>
                                 </div>
-                                <div style={{ height: "1px", background: "rgba(0,0,0,0.05)", margin: "32px 0" }} />
-                                <div style={fieldGroupStyle}>
-                                    {specificFields.map((field) => {
-                                        if (field.type === "select_multi") return <div key={field.key} style={{ gridColumn: "1 / -1" }}>{renderMultiSelect(field)}</div>;
-                                        if (field.type === "select") {
-                                            return (
-                                                <div key={field.key}>
-                                                    <label style={labelStyle}>{field.label}</label>
-                                                    <select style={{ ...inputStyle, cursor: "pointer" }} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })}>
-                                                        <option value="">Selecione...</option>
-                                                        {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                                                    </select>
-                                                </div>
-                                            );
-                                        }
-                                        if (field.type === "textarea") {
-                                            return (
-                                                <div key={field.key} style={{ gridColumn: "1 / -1" }}>
-                                                    <label style={labelStyle}>{field.label}</label>
-                                                    <textarea style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })} placeholder="Sua resposta detalhada" />
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <div key={field.key}>
-                                                <label style={labelStyle}>{field.label}</label>
-                                                <input style={inputStyle} type={field.type === "number" ? "number" : "text"} min={field.type === "number" ? "0" : undefined} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: field.type === "number" ? (e.target.value ? Number(e.target.value) : "") : e.target.value })} placeholder={field.type === "number" ? "0" : "Sua resposta..."} />
-                                            </div>
-                                        );
-                                    })}
+                                {specificFields.length > 0 && (
+                                    <>
+                                        <div style={{ height: "1px", background: "rgba(0,0,0,0.05)", margin: "32px 0" }} />
+                                        <div style={fieldGroupStyle}>
+                                            {specificFields.map((field) => {
+                                                if (field.type === "select_multi") return <div key={field.key} style={{ gridColumn: "1 / -1" }}>{renderMultiSelect(field)}</div>;
+                                                if (field.type === "select") {
+                                                    return (
+                                                        <div key={field.key}>
+                                                            <label style={labelStyle}>{field.label}</label>
+                                                            <select style={{ ...inputStyle, cursor: "pointer" }} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })}>
+                                                                <option value="">Selecione...</option>
+                                                                {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    );
+                                                }
+                                                if (field.type === "textarea") {
+                                                    return (
+                                                        <div key={field.key} style={{ gridColumn: "1 / -1" }}>
+                                                            <label style={labelStyle}>{field.label}</label>
+                                                            <textarea style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: e.target.value })} placeholder="Sua resposta detalhada" />
+                                                        </div>
+                                                    );
+                                                }
+                                                return (
+                                                    <div key={field.key}>
+                                                        <label style={labelStyle}>{field.label}</label>
+                                                        <input style={inputStyle} type={field.type === "number" ? "number" : "text"} min={field.type === "number" ? "0" : undefined} value={sportData[field.key] || ""} onChange={(e) => setSportData({ ...sportData, [field.key]: field.type === "number" ? (e.target.value ? Number(e.target.value) : "") : e.target.value })} placeholder={field.type === "number" ? "0" : "Sua resposta..."} />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 4 && (
+                        <div className="animate-fade-in">
+                            <div style={sectionStyle}>
+                                <h2 style={sectionTitleStyle}>
+                                    <div style={{ background: `${sport.color}15`, padding: 8, borderRadius: 10, color: sport.color }}><Eye size={22} /></div>
+                                    Revisão do Cadastro
+                                </h2>
+                                <p style={{ color: "#64748b", marginBottom: 28, fontSize: 14, lineHeight: 1.5 }}>
+                                    Confira todos os dados antes de enviar. Se precisar corrigir algo, use o botão <strong>“Etapa Anterior”</strong> para voltar.
+                                </p>
+
+                                {/* Dados Pessoais */}
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>👤 Dados Pessoais</h3>
+                                        <button type="button" onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: sport.color, background: `${sport.color}10`, border: `1px solid ${sport.color}30`, borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}><Edit3 size={12} /> Editar</button>
+                                    </div>
+                                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
+                                        {[
+                                            ["Nome", general.full_name],
+                                            ["Apelido", general.sport_nickname],
+                                            ["Nascimento", general.birth_date],
+                                            ["Responsável", general.responsavel],
+                                        ].filter(([, v]) => v).map(([label, value]) => (
+                                            <div key={label}><span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{label}</span><p style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>{value}</p></div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Contato */}
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>📍 Contato e Local</h3>
+                                        <button type="button" onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: sport.color, background: `${sport.color}10`, border: `1px solid ${sport.color}30`, borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}><Edit3 size={12} /> Editar</button>
+                                    </div>
+                                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
+                                        {[
+                                            ["WhatsApp", general.phone],
+                                            ["E-mail", general.email],
+                                            ["Cidade", general.city],
+                                            ["Estado", general.state],
+                                        ].filter(([, v]) => v).map(([label, value]) => (
+                                            <div key={label}><span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{label}</span><p style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>{value}</p></div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Mídia e Trajetória */}
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>📸 Mídia, Trajetória e Dados Técnicos</h3>
+                                        <button type="button" onClick={() => setStep(3)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: sport.color, background: `${sport.color}10`, border: `1px solid ${sport.color}30`, borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}><Edit3 size={12} /> Editar</button>
+                                    </div>
+                                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
+                                        {[
+                                            ["Instagram", general.instagram],
+                                            ["Outras Redes", general.outras_redes],
+                                            ["Altura", general.altura],
+                                            ["Peso", general.peso],
+                                            ["Biografia", general.bio],
+                                            ["Histórico", general.historico_esportivo],
+                                            ["Conquistas", general.conquistas],
+                                            ["Vídeos", general.links_video],
+                                            ...Object.entries(sportData).filter(([, v]) => v !== "" && v !== 0).map(([key, value]) => {
+                                                const fieldDef = specificFields.find(f => f.key === key);
+                                                return [fieldDef?.label || key, String(value)];
+                                            }),
+                                        ].filter(([, v]) => v).map(([label, value]) => (
+                                            <div key={label} style={{ gridColumn: String(value).length > 50 ? "1 / -1" : undefined }}><span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{label}</span><p style={{ fontSize: 14, fontWeight: 500, color: "#0f172a", whiteSpace: "pre-wrap" }}>{value}</p></div>
+                                        ))}
+                                        {[general.instagram, general.outras_redes, general.altura, general.peso, general.bio, general.historico_esportivo, general.conquistas, general.links_video].every(v => !v) && Object.values(sportData).every(v => v === "" || v === 0) && (
+                                            <p style={{ fontSize: 13, color: "#94a3b8", fontStyle: "italic", gridColumn: "1 / -1" }}>Nenhum dado preenchido nesta seção (opcional).</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Alerta final */}
+                                <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.05), rgba(59,130,246,0.05))", borderRadius: 14, padding: "20px 24px", border: "1px solid rgba(16,185,129,0.15)", display: "flex", alignItems: "center", gap: 14 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(16,185,129,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                        <Check size={20} color="#10b981" />
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>Tudo pronto para enviar!</p>
+                                        <p style={{ fontSize: 13, color: "#64748b" }}>Ao clicar em <strong>"Enviar Cadastro"</strong>, seus dados serão enviados para a nossa equipe de análise.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -467,9 +559,9 @@ export default function CadastroEsportePage() {
                         ) : (
                             <button
                                 type="submit" disabled={submitting}
-                                style={{ padding: "14px 40px", background: submitting ? "#94a3b8" : "var(--primary-color)", color: "#fff", borderRadius: 12, fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer", border: "none", display: "flex", alignItems: "center", gap: 12, transition: "all 0.2s", boxShadow: submitting ? "none" : "0 4px 16px rgba(37, 99, 235, 0.3)" }}
+                                style={{ padding: "16px 48px", background: submitting ? "#94a3b8" : "linear-gradient(135deg, #10b981, #059669)", color: "#fff", borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer", border: "none", display: "flex", alignItems: "center", gap: 12, transition: "all 0.2s", boxShadow: submitting ? "none" : "0 6px 20px rgba(16, 185, 129, 0.35)" }}
                             >
-                                {submitting ? <><Loader2 size={20} className="animate-spin" /> Processando...</> : <><Check size={20} strokeWidth={3} /> Concluir e Enviar</>}
+                                {submitting ? <><Loader2 size={20} className="animate-spin" /> Enviando...</> : <><Send size={20} /> Enviar Cadastro</>}
                             </button>
                         )}
                     </div>
