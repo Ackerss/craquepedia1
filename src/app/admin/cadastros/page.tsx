@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Filter, Loader2, Eye, ClipboardList } from "lucide-react";
+import { Search, Filter, Loader2, Eye, ClipboardList, Trash2, AlertTriangle, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { STATUS_LABELS, type Submission } from "@/lib/supabase/types";
 
@@ -12,6 +12,24 @@ export default function CadastrosPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("todos");
     const [filterSport, setFilterSport] = useState("todos");
+    const [deleteTarget, setDeleteTarget] = useState<Submission | null>(null);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!deleteTarget || deleteConfirmText !== "EXCLUIR") return;
+        setDeleting(true);
+        try {
+            await supabase.from("submissions").delete().eq("id", deleteTarget.id);
+            setSubmissions(prev => prev.filter(s => s.id !== deleteTarget.id));
+        } catch (err) {
+            console.error("Erro ao excluir:", err);
+        } finally {
+            setDeleteTarget(null);
+            setDeleteConfirmText("");
+            setDeleting(false);
+        }
+    };
 
     useEffect(() => {
         async function load() {
@@ -138,17 +156,28 @@ export default function CadastrosPage() {
                                         </span>
                                     </td>
                                     <td style={{ padding: "14px 16px", textAlign: "center" }}>
-                                        <Link
-                                            href={`/admin/cadastros/${sub.id}`}
-                                            style={{
-                                                display: "inline-flex", alignItems: "center", gap: 6,
-                                                padding: "6px 14px", borderRadius: 8, fontSize: 12,
-                                                fontWeight: 600, color: "var(--primary-color)",
-                                                background: "rgba(37,99,235,0.08)",
-                                            }}
-                                        >
-                                            <Eye size={14} /> Revisar
-                                        </Link>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                                            <Link
+                                                href={`/admin/cadastros/${sub.id}`}
+                                                style={{
+                                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                                    padding: "6px 14px", borderRadius: 8, fontSize: 12,
+                                                    fontWeight: 600, color: "var(--primary-color)",
+                                                    background: "rgba(37,99,235,0.08)",
+                                                }}
+                                            >
+                                                <Eye size={14} /> Revisar
+                                            </Link>
+                                            <button
+                                                onClick={() => setDeleteTarget(sub)}
+                                                title="Excluir cadastro"
+                                                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", color: "#ef4444", cursor: "pointer", transition: "all 0.2s", fontSize: 0 }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.15)"; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.05)"; }}
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -162,6 +191,52 @@ export default function CadastrosPage() {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Confirmação de Exclusão */}
+            {deleteTarget && (
+                <div style={{ position: "fixed", inset: 0, zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}>
+                    <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: 32, maxWidth: 440, width: "90%", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <AlertTriangle size={20} color="#ef4444" />
+                                </div>
+                                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>Excluir Cadastro</h3>
+                            </div>
+                            <button onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}><X size={20} /></button>
+                        </div>
+                        <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6, marginBottom: 8 }}>
+                            Você está prestes a excluir permanentemente o cadastro de:
+                        </p>
+                        <p style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16, padding: "10px 14px", background: "#fef2f2", borderRadius: 8, border: "1px solid #fecaca" }}>
+                            {deleteTarget.full_name} ({deleteTarget.sport_name})
+                        </p>
+                        <p style={{ fontSize: 13, color: "#ef4444", fontWeight: 600, marginBottom: 8 }}>
+                            ⚠️ Esta ação é irreversível.
+                        </p>
+                        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 12 }}>
+                            Digite <strong>EXCLUIR</strong> para confirmar:
+                        </p>
+                        <input
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="Digite EXCLUIR"
+                            style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 20 }}
+                            autoFocus
+                        />
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                            <button onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }} style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid var(--border-color)", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleteConfirmText !== "EXCLUIR" || deleting}
+                                style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: deleteConfirmText === "EXCLUIR" ? "#ef4444" : "#e2e8f0", color: deleteConfirmText === "EXCLUIR" ? "#fff" : "#94a3b8", fontSize: 13, fontWeight: 700, cursor: deleteConfirmText === "EXCLUIR" ? "pointer" : "not-allowed", transition: "all 0.2s" }}
+                            >
+                                {deleting ? "Excluindo..." : "Excluir Permanentemente"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
