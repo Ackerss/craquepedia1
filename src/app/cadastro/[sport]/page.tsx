@@ -120,8 +120,7 @@ export default function CadastroEsportePage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
         // Só permite enviar na etapa de revisão (step 4)
         if (step !== 4) return;
         if (!sport) return;
@@ -295,7 +294,7 @@ export default function CadastroEsportePage() {
                     <ArrowLeft size={16} /> Voltar à Seleção de Esporte
                 </Link>
 
-                <form onSubmit={handleSubmit}>
+                <div>
                     {step === 1 && (
                         <div className="animate-fade-in">
                             <div style={sectionStyle}>
@@ -560,14 +559,14 @@ export default function CadastroEsportePage() {
                             </button>
                         ) : (
                             <button
-                                type="submit" disabled={submitting}
+                                type="button" onClick={handleSubmit} disabled={submitting}
                                 style={{ padding: "16px 48px", background: submitting ? "#94a3b8" : "linear-gradient(135deg, #10b981, #059669)", color: "#fff", borderRadius: 14, fontWeight: 800, fontSize: 16, cursor: submitting ? "not-allowed" : "pointer", border: "none", display: "flex", alignItems: "center", gap: 12, transition: "all 0.2s", boxShadow: submitting ? "none" : "0 6px 20px rgba(16, 185, 129, 0.35)" }}
                             >
                                 {submitting ? <><Loader2 size={20} className="animate-spin" /> Enviando...</> : <><Send size={20} /> Enviar Cadastro</>}
                             </button>
                         )}
                     </div>
-                </form>
+                </div>
             </main>
 
             <style>{`
