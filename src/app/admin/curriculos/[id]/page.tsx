@@ -61,6 +61,7 @@ export default function CurriculoEditorPage() {
     const [saving, setSaving] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [generated, setGenerated] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
 
     const [cv, setCv] = useState<CurriculoData>({
@@ -192,7 +193,7 @@ export default function CurriculoEditorPage() {
         textTransform: "uppercase", letterSpacing: "0.5px",
     };
 
-    const [isExporting, setIsExporting] = useState(false);
+    // isExporting state is declared at the top with other hooks
 
     // PREVIEW MODE
     if (showPreview) {
@@ -380,7 +381,8 @@ export default function CurriculoEditorPage() {
                         </div>
 
                         {/* Main Body Grid */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "calc(297mm - 270px)" }}> /* Subtrai Header (aprox 200px) e Bar (aprox 70px) */
+                        {/* Main Body Grid - Subtrai Header (aprox 200px) e Bar (aprox 70px) */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: "calc(297mm - 270px)" }}>
 
                             {/* Left Column (Main Content) */}
                             <div style={{ padding: "40px 50px 40px 60px" }}>
