@@ -97,8 +97,24 @@ export default function ServiceListPage({
         );
     }
 
+    // Definir cores suaves para cada coluna Kanban
+    const KANBAN_COLUMNS: { key: ServiceStatus; glowColor: string; borderAccent: string; headerBg: string }[] = [
+        { key: "pendente", glowColor: "rgba(245, 158, 11, 0.04)", borderAccent: "rgba(245, 158, 11, 0.25)", headerBg: "rgba(245, 158, 11, 0.08)" },
+        { key: "em_andamento", glowColor: "rgba(59, 130, 246, 0.04)", borderAccent: "rgba(59, 130, 246, 0.25)", headerBg: "rgba(59, 130, 246, 0.08)" },
+        { key: "concluido", glowColor: "rgba(16, 185, 129, 0.04)", borderAccent: "rgba(16, 185, 129, 0.25)", headerBg: "rgba(16, 185, 129, 0.08)" },
+        { key: "nao_aplicavel", glowColor: "rgba(148, 163, 184, 0.04)", borderAccent: "rgba(148, 163, 184, 0.25)", headerBg: "rgba(148, 163, 184, 0.08)" },
+    ];
+
+    // Filtrar colunas visíveis
+    const visibleColumns = KANBAN_COLUMNS.filter((col) => {
+        const items = grouped[col.key];
+        if (filterStatus !== "todos") return col.key === filterStatus;
+        if (col.key === "nao_aplicavel" && items.length === 0) return false;
+        return true;
+    });
+
     return (
-        <div style={{ padding: "28px 32px", maxWidth: 1200, margin: "0 auto" }} className="animate-fade-in">
+        <div style={{ padding: "28px 32px", maxWidth: 1600, margin: "0 auto" }} className="animate-fade-in">
             {/* Header */}
             <div style={{ marginBottom: 28 }}>
                 <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>
@@ -108,7 +124,7 @@ export default function ServiceListPage({
             </div>
 
             {/* Stat Cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
                 {[
                     { label: "Total", value: counts.total, color: "#64748b", bg: "rgba(100,116,139,0.1)" },
                     { label: "Pendentes", value: counts.pendente, color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
@@ -116,39 +132,39 @@ export default function ServiceListPage({
                     { label: "Concluídos", value: counts.concluido, color: "#10b981", bg: "rgba(16,185,129,0.1)" },
                 ].map((stat) => (
                     <div key={stat.label} style={{
-                        background: "#fff", borderRadius: 12, padding: "16px 20px",
-                        border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 14,
+                        background: "#fff", borderRadius: 10, padding: "12px 16px",
+                        border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 12,
                     }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <span style={{ fontSize: 20, fontWeight: 800, color: stat.color }}>{stat.value}</span>
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ fontSize: 18, fontWeight: 800, color: stat.color }}>{stat.value}</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>{stat.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}>{stat.label}</span>
                     </div>
                 ))}
             </div>
 
             {/* Filtros */}
             <div style={{
-                display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap",
-                background: "#fff", padding: "14px 18px", borderRadius: 12,
+                display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap",
+                background: "#fff", padding: "12px 16px", borderRadius: 10,
                 border: "1px solid var(--border-color)",
             }}>
                 <div style={{ position: "relative", flex: "1 1 280px" }}>
-                    <Search size={18} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
+                    <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
                     <input
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar por nome..."
                         style={{
-                            width: "100%", padding: "10px 14px 10px 40px", borderRadius: 8,
-                            border: "1.5px solid var(--border-color)", fontSize: 14, fontFamily: "inherit", outline: "none",
+                            width: "100%", padding: "9px 14px 9px 36px", borderRadius: 8,
+                            border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit", outline: "none",
                         }}
                     />
                 </div>
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit" }}
+                    style={{ padding: "9px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 12, fontFamily: "inherit" }}
                 >
                     <option value="todos">Todos os Status</option>
                     <option value="pendente">Pendente</option>
@@ -158,130 +174,198 @@ export default function ServiceListPage({
                 </select>
             </div>
 
-            {/* Lista por Status */}
-            {(["pendente", "em_andamento", "concluido", "nao_aplicavel"] as ServiceStatus[]).map((statusKey) => {
-                const items = grouped[statusKey];
-                if (items.length === 0 && filterStatus !== "todos" && filterStatus !== statusKey) return null;
-                if (items.length === 0) return null;
-                const statusInfo = SERVICE_STATUS_LABELS[statusKey];
-
-                return (
-                    <div key={statusKey} style={{ marginBottom: 28 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                            <span style={{
-                                width: 10, height: 10, borderRadius: "50%",
-                                background: statusInfo.color, display: "inline-block",
-                            }} />
-                            <h3 style={{ fontSize: 15, fontWeight: 700 }}>
-                                {statusInfo.label} ({items.length})
-                            </h3>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
-                            {items.map((service) => {
-                                const athlete = service.athletes;
-                                if (!athlete) return null;
-                                return (
-                                    <div
-                                        key={service.id}
-                                        style={{
-                                            background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)",
-                                            padding: 20, transition: "all 0.2s",
-                                        }}
-                                    >
-                                        {/* Athlete Info */}
-                                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                                            <div style={{
-                                                width: 42, height: 42, borderRadius: "50%",
-                                                background: athlete.photo_url ? "transparent" : "linear-gradient(135deg, var(--primary-color), #7c3aed)",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: "#fff", fontWeight: 700, fontSize: 16, flexShrink: 0,
-                                                overflow: "hidden",
-                                            }}>
-                                                {athlete.photo_url ? (
-                                                    <img src={athlete.photo_url} alt={athlete.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                                ) : (
-                                                    athlete.full_name.charAt(0)
-                                                )}
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>
-                                                    {athlete.sport_nickname || athlete.full_name}
-                                                </h4>
-                                                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                                                    {athlete.sport_name} {athlete.city ? `• ${athlete.city}` : ""}
-                                                </p>
-                                            </div>
-                                            <span style={{
-                                                padding: "4px 10px", borderRadius: 6, fontSize: 11,
-                                                fontWeight: 600, background: statusInfo.bg, color: statusInfo.color,
-                                            }}>
-                                                {statusInfo.label}
-                                            </span>
-                                        </div>
-
-                                        {/* Extra content */}
-                                        {renderExtra && renderExtra(service)}
-
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", gap: 8, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-color)", flexWrap: "wrap" }}>
-                                            {statusKey === "pendente" && (
-                                                <button
-                                                    onClick={() => updateServiceStatus(service.id, "em_andamento")}
-                                                    style={{
-                                                        padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                                                        background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", cursor: "pointer",
-                                                    }}
-                                                >
-                                                    ▶ Iniciar
-                                                </button>
-                                            )}
-                                            {statusKey === "em_andamento" && (
-                                                <button
-                                                    onClick={() => updateServiceStatus(service.id, "concluido")}
-                                                    style={{
-                                                        padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                                                        background: "rgba(16,185,129,0.1)", color: "#10b981", border: "none", cursor: "pointer",
-                                                    }}
-                                                >
-                                                    ✅ Concluir
-                                                </button>
-                                            )}
-                                            {statusKey === "concluido" && (
-                                                <button
-                                                    onClick={() => updateServiceStatus(service.id, "em_andamento")}
-                                                    style={{
-                                                        padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                                                        background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", cursor: "pointer",
-                                                    }}
-                                                >
-                                                    ↩ Reabrir
-                                                </button>
-                                            )}
-                                            {hasDetailPage && (
-                                                <Link
-                                                    href={`/admin/${serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos"}/${athlete.id}`}
-                                                    style={{
-                                                        padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                                                        color: "var(--primary-color)", background: "rgba(37,99,235,0.08)",
-                                                        display: "inline-flex", alignItems: "center", gap: 4, marginLeft: "auto",
-                                                    }}
-                                                >
-                                                    Abrir <ArrowRight size={14} />
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                );
-            })}
-
-            {filtered.length === 0 && (
+            {/* Kanban Board */}
+            {filtered.length === 0 ? (
                 <div style={{ padding: 48, textAlign: "center", background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)" }}>
                     <p style={{ fontSize: 40, marginBottom: 8 }}>{icon}</p>
                     <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Nenhum atleta encontrado.</p>
+                </div>
+            ) : (
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: filterStatus !== "todos"
+                        ? "1fr"
+                        : `repeat(${visibleColumns.length}, minmax(280px, 1fr))`,
+                    gap: 16,
+                    overflowX: "auto",
+                    paddingBottom: 8,
+                }}>
+                    {visibleColumns.map((col) => {
+                        const items = grouped[col.key];
+                        const statusInfo = SERVICE_STATUS_LABELS[col.key];
+
+                        return (
+                            <div
+                                key={col.key}
+                                style={{
+                                    background: col.glowColor,
+                                    borderRadius: 14,
+                                    border: `1px solid ${col.borderAccent}`,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    minWidth: 280,
+                                    maxHeight: "calc(100vh - 300px)",
+                                }}
+                            >
+                                {/* Column Header */}
+                                <div style={{
+                                    padding: "14px 18px",
+                                    background: col.headerBg,
+                                    borderRadius: "14px 14px 0 0",
+                                    borderBottom: `1px solid ${col.borderAccent}`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    position: "sticky",
+                                    top: 0,
+                                    zIndex: 1,
+                                }}>
+                                    <span style={{
+                                        width: 10, height: 10, borderRadius: "50%",
+                                        background: statusInfo.color, display: "inline-block",
+                                        boxShadow: `0 0 8px ${statusInfo.color}40`,
+                                    }} />
+                                    <h3 style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>
+                                        {statusInfo.label}
+                                    </h3>
+                                    <span style={{
+                                        padding: "2px 10px", borderRadius: 20, fontSize: 11,
+                                        fontWeight: 700, background: statusInfo.bg, color: statusInfo.color,
+                                    }}>
+                                        {items.length}
+                                    </span>
+                                </div>
+
+                                {/* Column Body — scrollable */}
+                                <div style={{
+                                    padding: "10px 10px 14px",
+                                    overflowY: "auto",
+                                    flex: 1,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 8,
+                                }}>
+                                    {items.length === 0 ? (
+                                        <div style={{
+                                            padding: "28px 16px", textAlign: "center",
+                                            color: "var(--text-secondary)", fontSize: 12,
+                                            opacity: 0.6, fontStyle: "italic",
+                                        }}>
+                                            Nenhum item
+                                        </div>
+                                    ) : (
+                                        items.map((service) => {
+                                            const athlete = service.athletes;
+                                            if (!athlete) return null;
+                                            return (
+                                                <div
+                                                    key={service.id}
+                                                    style={{
+                                                        background: "#fff",
+                                                        borderRadius: 10,
+                                                        border: "1px solid var(--border-color)",
+                                                        padding: "12px 14px",
+                                                        transition: "box-shadow 0.2s, transform 0.2s",
+                                                        cursor: "default",
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 16px ${statusInfo.color}15`;
+                                                        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+                                                        (e.currentTarget as HTMLDivElement).style.transform = "none";
+                                                    }}
+                                                >
+                                                    {/* Athlete Info */}
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                                        <div style={{
+                                                            width: 32, height: 32, borderRadius: "50%",
+                                                            background: athlete.photo_url ? "transparent" : "linear-gradient(135deg, var(--primary-color), #7c3aed)",
+                                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                                            color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0,
+                                                            overflow: "hidden",
+                                                        }}>
+                                                            {athlete.photo_url ? (
+                                                                <img src={athlete.photo_url} alt={athlete.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                                            ) : (
+                                                                athlete.full_name.charAt(0)
+                                                            )}
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                                {athlete.sport_nickname || athlete.full_name}
+                                                            </h4>
+                                                            <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                                {athlete.sport_name} {athlete.city ? `• ${athlete.city}` : ""}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Extra content */}
+                                                    {renderExtra && renderExtra(service)}
+
+                                                    {/* Actions */}
+                                                    <div style={{ display: "flex", gap: 6, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-color)", flexWrap: "wrap" }}>
+                                                        {col.key === "pendente" && (
+                                                            <button
+                                                                onClick={() => updateServiceStatus(service.id, "em_andamento")}
+                                                                style={{
+                                                                    padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                    background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", cursor: "pointer",
+                                                                    transition: "background 0.2s",
+                                                                }}
+                                                            >
+                                                                ▶ Iniciar
+                                                            </button>
+                                                        )}
+                                                        {col.key === "em_andamento" && (
+                                                            <button
+                                                                onClick={() => updateServiceStatus(service.id, "concluido")}
+                                                                style={{
+                                                                    padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                    background: "rgba(16,185,129,0.1)", color: "#10b981", border: "none", cursor: "pointer",
+                                                                    transition: "background 0.2s",
+                                                                }}
+                                                            >
+                                                                ✅ Concluir
+                                                            </button>
+                                                        )}
+                                                        {col.key === "concluido" && (
+                                                            <button
+                                                                onClick={() => updateServiceStatus(service.id, "em_andamento")}
+                                                                style={{
+                                                                    padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                    background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", cursor: "pointer",
+                                                                    transition: "background 0.2s",
+                                                                }}
+                                                            >
+                                                                ↩ Reabrir
+                                                            </button>
+                                                        )}
+                                                        {hasDetailPage && (
+                                                            <Link
+                                                                href={`/admin/${serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos"}/${athlete.id}`}
+                                                                style={{
+                                                                    padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+                                                                    color: "#fff", background: "linear-gradient(135deg, #0f172a, #1e40af)",
+                                                                    display: "inline-flex", alignItems: "center", gap: 4, marginLeft: "auto",
+                                                                    textDecoration: "none", boxShadow: "0 1px 4px rgba(15,23,42,0.15)",
+                                                                    transition: "all 0.2s",
+                                                                }}
+                                                            >
+                                                                Abrir <ArrowRight size={12} />
+                                                            </Link>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
