@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     ArrowLeft, Loader2, CheckCircle, XCircle, AlertTriangle,
-    Edit, MessageSquare, User, Phone, Mail, MapPin, Calendar,
+    Edit, MessageSquare, User, Phone, MapPin,
     Instagram, FileText, Activity, Save
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -35,9 +35,13 @@ export default function RevisaoCadastroPage() {
             if (subData && !subErr) {
                 setSubmission(subData);
                 setNotes(subData.admin_notes || "");
-                setEditData(subData);
+                // Ensure nested objects exist to avoid undefined errors during edit
+                setEditData({
+                    ...subData,
+                    general_data: subData.general_data || {},
+                    sport_data: subData.sport_data || {}
+                });
 
-                // Load the specific sport schema
                 const { data: sportData } = await supabase
                     .from("sports")
                     .select("specific_fields")
@@ -65,7 +69,6 @@ export default function RevisaoCadastroPage() {
             .eq("id", id);
 
         if (!error) {
-            // Se aprovado, criar atleta automaticamente
             if (newStatus === "aprovado" && submission) {
                 await supabase.from("athletes").insert({
                     submission_id: submission.id,
@@ -110,6 +113,8 @@ export default function RevisaoCadastroPage() {
         if (!error) {
             setSubmission({ ...submission!, ...editData, admin_notes: notes });
             setEditMode(false);
+        } else {
+            alert("Erro ao salvar as edições");
         }
         setSaving(false);
     };
@@ -117,7 +122,7 @@ export default function RevisaoCadastroPage() {
     if (loading) {
         return (
             <div style={{ padding: 48, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "var(--text-secondary)" }}>
-                <Loader2 size={24} style={{ animation: "spin 1s linear infinite" }} /> Carregando cadastro...
+                <Loader2 size={24} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} /> Carregando cadastro...
                 <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </div>
         );
@@ -127,7 +132,7 @@ export default function RevisaoCadastroPage() {
         return (
             <div style={{ padding: 48, textAlign: "center" }}>
                 <p>Cadastro não encontrado.</p>
-                <Link href="/admin/cadastros">Voltar</Link>
+                <Link href="/admin/cadastros" style={{ color: "var(--primary-color)", fontWeight: "bold" }}>Voltar</Link>
             </div>
         );
     }
@@ -140,18 +145,18 @@ export default function RevisaoCadastroPage() {
         width: "100%", padding: "10px 14px", borderRadius: 8,
         border: "1.5px solid var(--border-color)", fontSize: 13,
         fontFamily: "inherit", outline: "none", background: editMode ? "#fff" : "#f8fafc",
+        transition: "all 0.2s"
     };
 
-    const renderField = (label: string, value: string | undefined, key?: string, editable?: boolean) => (
+    const renderFlatField = (label: string, value: string | undefined, key: keyof Submission, type: "text" | "date" | "email" = "text") => (
         <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</label>
-            {editMode && editable ? (
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</label>
+            {editMode ? (
                 <input
-                    style={inputStyle}
-                    value={value || ""}
-                    onChange={(e) => {
-                        if (key) setEditData({ ...editData, [key]: e.target.value });
-                    }}
+                    style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
+                    type={type}
+                    value={(editData[key] as string) || ""}
+                    onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
                 />
             ) : (
                 <p style={{ fontSize: 14, fontWeight: 500, color: value ? "var(--text-primary)" : "var(--text-secondary)" }}>
@@ -160,6 +165,36 @@ export default function RevisaoCadastroPage() {
             )}
         </div>
     );
+
+    const renderGeneralField = (label: string, key: string, isTextarea = false) => {
+        const value = generalData[key];
+        const editValue = (editData.general_data as any)?.[key] || "";
+
+        return (
+            <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</label>
+                {editMode ? (
+                    isTextarea ? (
+                        <textarea
+                            style={{ ...inputStyle, borderColor: "var(--primary-color)", minHeight: 80, resize: "vertical" }}
+                            value={editValue}
+                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as any), [key]: e.target.value } })}
+                        />
+                    ) : (
+                        <input
+                            style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
+                            value={editValue}
+                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as any), [key]: e.target.value } })}
+                        />
+                    )
+                ) : (
+                    <p style={{ fontSize: 14, fontWeight: 500, color: value ? "var(--text-primary)" : "var(--text-secondary)", whiteSpace: "pre-wrap" }}>
+                        {value || "—"}
+                    </p>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div style={{ padding: "28px 32px", maxWidth: 1000, margin: "0 auto" }} className="animate-fade-in">
@@ -182,109 +217,115 @@ export default function RevisaoCadastroPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                     {!editMode ? (
-                        <button onClick={() => setEditMode(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "1.5px solid var(--border-color)", background: "#fff", cursor: "pointer" }}>
-                            <Edit size={16} /> Editar
+                        <button onClick={() => setEditMode(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "1.5px solid var(--border-color)", background: "#fff", cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                            <Edit size={16} /> Editar Dados
                         </button>
                     ) : (
-                        <button onClick={saveEdits} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "var(--primary-color)", color: "#fff", cursor: "pointer", border: "none" }}>
-                            <Save size={16} /> {saving ? "Salvando..." : "Salvar Edições"}
+                        <button onClick={saveEdits} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "var(--primary-color)", color: "#fff", cursor: "pointer", border: "none", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)" }}>
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} {saving ? "Salvando..." : "Salvar Edições"}
                         </button>
                     )}
                 </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
                 {/* Dados do cadastro */}
                 <div>
                     {/* Dados Pessoais */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                            <User size={18} color="var(--primary-color)" /> Dados Pessoais
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16 }}>
+                            <span style={{ background: "rgba(37, 99, 235, 0.1)", padding: 6, borderRadius: 8 }}><User size={18} color="var(--primary-color)" /></span> Dados Pessoais
                         </h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
-                            {renderField("Nome Completo", editMode ? editData.full_name : submission.full_name, "full_name", true)}
-                            {renderField("Nome Esportivo", editMode ? editData.sport_nickname : submission.sport_nickname, "sport_nickname", true)}
-                            {renderField("Data de Nascimento", submission.birth_date || "")}
-                            {renderField("Altura", generalData.altura)}
-                            {renderField("Peso", generalData.peso)}
-                            {renderField("Responsável", generalData.responsavel)}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
+                            {renderFlatField("Nome Completo", submission.full_name, "full_name")}
+                            {renderFlatField("Nome Esportivo / Apelido", submission.sport_nickname || "", "sport_nickname")}
+                            {renderFlatField("Data de Nascimento", submission.birth_date || "", "birth_date", "date")}
+                            {renderGeneralField("Altura", "altura")}
+                            {renderGeneralField("Peso", "peso")}
+                            <div style={{ gridColumn: "1 / -1" }}>
+                                {renderGeneralField("Responsável Legal", "responsavel")}
+                            </div>
                         </div>
                     </div>
 
                     {/* Contato */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                            <Phone size={18} color="var(--primary-color)" /> Contato
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16 }}>
+                            <span style={{ background: "rgba(37, 99, 235, 0.1)", padding: 6, borderRadius: 8 }}><Phone size={18} color="var(--primary-color)" /></span> Contato e Localização
                         </h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
-                            {renderField("WhatsApp", editMode ? editData.phone : submission.phone, "phone", true)}
-                            {renderField("E-mail", editMode ? editData.email : submission.email, "email", true)}
-                            {renderField("Cidade", editMode ? editData.city : submission.city, "city", true)}
-                            {renderField("Estado", editMode ? editData.state : submission.state, "state", true)}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
+                            {renderFlatField("WhatsApp", submission.phone || "", "phone")}
+                            {renderFlatField("E-mail", submission.email || "", "email", "email")}
+                            {renderFlatField("Cidade", submission.city || "", "city")}
+                            {renderFlatField("Estado", submission.state || "", "state")}
                         </div>
                     </div>
 
                     {/* Redes sociais */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                            <Instagram size={18} color="var(--primary-color)" /> Redes & Bio
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16 }}>
+                            <span style={{ background: "rgba(37, 99, 235, 0.1)", padding: 6, borderRadius: 8 }}><Instagram size={18} color="var(--primary-color)" /></span> Mídia e Trajetória
                         </h3>
-                        {renderField("Instagram", generalData.instagram)}
-                        {renderField("Outras Redes", generalData.outras_redes)}
-                        {renderField("Biografia", generalData.bio)}
-                        {renderField("Histórico Esportivo", generalData.historico_esportivo)}
-                        {renderField("Conquistas", generalData.conquistas)}
-                        {renderField("Links de Vídeo", generalData.links_video)}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
+                            {renderGeneralField("Instagram", "instagram")}
+                            {renderGeneralField("Outras Redes", "outras_redes")}
+                        </div>
+                        <div style={{ marginTop: 12 }}>
+                            {renderGeneralField("Biografia", "bio", true)}
+                            {renderGeneralField("Histórico Esportivo", "historico_esportivo", true)}
+                            {renderGeneralField("Conquistas", "conquistas", true)}
+                            {renderGeneralField("Links de Vídeos Relacionados", "links_video", true)}
+                        </div>
                     </div>
 
                     {/* Dados do esporte */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                            <Activity size={18} color="var(--primary-color)" /> Dados de {submission.sport_name}
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16 }}>
+                            <span style={{ background: "rgba(37, 99, 235, 0.1)", padding: 6, borderRadius: 8 }}><Activity size={18} color="var(--primary-color)" /></span> Dados Técnicos de {submission.sport_name}
                         </h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px" }}>
                             {sportSchema.length > 0 ? sportSchema.map((field) => (
-                                <div key={field.key} style={{ marginBottom: 12, gridColumn: field.type === 'textarea' ? '1 / -1' : 'auto' }}>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase" }}>
+                                <div key={field.key} style={{ gridColumn: field.type === 'textarea' || field.type === 'select_multi' ? '1 / -1' : 'auto' }}>
+                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                                         {field.label}
                                     </label>
                                     {editMode ? (
                                         field.type === 'textarea' ? (
                                             <textarea
-                                                style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+                                                style={{ ...inputStyle, borderColor: "var(--primary-color)", minHeight: 80, resize: "vertical" }}
                                                 value={String((editData.sport_data as any)?.[field.key] || "")}
                                                 onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
                                             />
-                                        ) : field.type === 'select' ? (
-                                            <select
-                                                style={inputStyle}
+                                        ) : field.type === 'select' || field.type === 'select_multi' ? (
+                                            /* Para simplificar edição de múltipla escolha ou seletor, mantemos ou transformamos em select ou texto com vírgula (já que salvamos assim antes)
+                                               Como os dados vem como string "Opt1, Opt2", vamos usar input de texto para edições complexas de arrays por agora ou manter string simples */
+                                            <input
+                                                style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
                                                 value={String((editData.sport_data as any)?.[field.key] || "")}
                                                 onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
-                                            >
-                                                <option value="">Selecione...</option>
-                                                {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-                                            </select>
+                                                placeholder={field.type === 'select_multi' ? "Separe valores com vírgula" : "Digite a seleção"}
+                                            />
                                         ) : (
                                             <input
-                                                style={inputStyle}
+                                                style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
                                                 type={field.type === "number" ? "number" : "text"}
                                                 value={String((editData.sport_data as any)?.[field.key] || "")}
                                                 onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value } })}
                                             />
                                         )
                                     ) : (
-                                        <p style={{ fontSize: 14, fontWeight: 500 }}>
-                                            {Array.isArray(sportData[field.key]) ? (sportData[field.key] as string[]).join(", ") : String(sportData[field.key] || "—")}
+                                        <p style={{ fontSize: 14, fontWeight: 500, background: "#f8fafc", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.03)" }}>
+                                            {String(sportData[field.key] || "—")}
                                         </p>
                                     )}
                                 </div>
                             )) : Object.entries(sportData).map(([key, value]) => (
-                                <div key={key} style={{ marginBottom: 12 }}>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase" }}>
+                                <div key={key} style={{ marginBottom: 16 }}>
+                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase" }}>
                                         {key.replace(/_/g, " ")}
                                     </label>
-                                    <p style={{ fontSize: 14, fontWeight: 500 }}>
-                                        {Array.isArray(value) ? value.join(", ") : String(value || "—")}
+                                    <p style={{ fontSize: 14, fontWeight: 500, background: "#f8fafc", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.03)" }}>
+                                        {String(value || "—")}
                                     </p>
                                 </div>
                             ))}
@@ -295,97 +336,99 @@ export default function RevisaoCadastroPage() {
                 {/* Sidebar Actions */}
                 <div>
                     {/* Ações */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Ações</h3>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 16 }}>Ações de Revisão</h3>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             <button
                                 onClick={() => updateStatus("aprovado")}
                                 disabled={saving || submission.status === "aprovado"}
                                 style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 16px", borderRadius: 10, fontSize: 13,
-                                    fontWeight: 600, border: "none", cursor: "pointer",
-                                    background: submission.status === "aprovado" ? "#e2e8f0" : "#10b981",
-                                    color: submission.status === "aprovado" ? "var(--text-secondary)" : "#fff",
-                                    width: "100%", justifyContent: "center",
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer",
+                                    background: submission.status === "aprovado" ? "#f1f5f9" : "#10b981", color: submission.status === "aprovado" ? "#94a3b8" : "#fff", width: "100%", justifyContent: "center", transition: "all 0.2s"
                                 }}
                             >
-                                <CheckCircle size={16} /> {submission.status === "aprovado" ? "Já Aprovado" : "Aprovar Cadastro"}
+                                <CheckCircle size={18} /> {submission.status === "aprovado" ? "Já Aprovado" : "Aprovar Atleta"}
                             </button>
                             <button
                                 onClick={() => updateStatus("em_revisao")}
                                 disabled={saving}
                                 style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 16px", borderRadius: 10, fontSize: 13,
-                                    fontWeight: 600, border: "1.5px solid var(--border-color)",
-                                    cursor: "pointer", background: "#fff", color: "var(--primary-color)",
-                                    width: "100%", justifyContent: "center",
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "1.5px solid rgba(0,0,0,0.08)", cursor: "pointer",
+                                    background: "#fff", color: "var(--primary-color)", width: "100%", justifyContent: "center", transition: "all 0.2s"
                                 }}
                             >
-                                <Edit size={16} /> Marcar como Em Revisão
+                                <Activity size={18} /> Em Análise Interna
                             </button>
                             <button
                                 onClick={() => updateStatus("complementar")}
                                 disabled={saving}
                                 style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 16px", borderRadius: 10, fontSize: 13,
-                                    fontWeight: 600, border: "1.5px solid #f59e0b",
-                                    cursor: "pointer", background: "rgba(245,158,11,0.08)", color: "#f59e0b",
-                                    width: "100%", justifyContent: "center",
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "1.5px solid rgba(245,158,11,0.3)", cursor: "pointer",
+                                    background: "rgba(245,158,11,0.08)", color: "#f59e0b", width: "100%", justifyContent: "center", transition: "all 0.2s"
                                 }}
                             >
-                                <AlertTriangle size={16} /> Pedir Complemento
+                                <AlertTriangle size={18} /> Pendência de Dados
                             </button>
                             <button
-                                onClick={() => { if (confirm("Tem certeza que deseja rejeitar?")) updateStatus("rejeitado"); }}
+                                onClick={() => { if (confirm("Tem certeza que deseja reprovar este atleta?")) updateStatus("rejeitado"); }}
                                 disabled={saving}
                                 style={{
-                                    display: "flex", alignItems: "center", gap: 8,
-                                    padding: "12px 16px", borderRadius: 10, fontSize: 13,
-                                    fontWeight: 600, border: "1.5px solid #ef4444",
-                                    cursor: "pointer", background: "rgba(239,68,68,0.08)", color: "#ef4444",
-                                    width: "100%", justifyContent: "center",
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "1.5px solid rgba(239,68,68,0.3)", cursor: "pointer",
+                                    background: "rgba(239,68,68,0.08)", color: "#ef4444", width: "100%", justifyContent: "center", transition: "all 0.2s"
                                 }}
                             >
-                                <XCircle size={16} /> Rejeitar
+                                <XCircle size={18} /> Reprovar Perfil
                             </button>
                         </div>
                     </div>
 
                     {/* Notas */}
-                    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                            <MessageSquare size={16} /> Notas Internas
+                    <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                            <MessageSquare size={16} /> Blocos de Notas / Chat
                         </h3>
+                        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>Anotações visíveis apenas para Jacson e Diego.</p>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             style={{
-                                width: "100%", padding: "12px 14px", borderRadius: 8,
-                                border: "1.5px solid var(--border-color)", fontSize: 13,
-                                fontFamily: "inherit", minHeight: 120, resize: "vertical",
-                                outline: "none",
+                                width: "100%", padding: "14px", borderRadius: 12,
+                                border: "1.5px solid rgba(0,0,0,0.08)", fontSize: 13,
+                                fontFamily: "inherit", minHeight: 140, resize: "vertical",
+                                outline: "none", background: "#f8fafc", transition: "all 0.2s"
                             }}
-                            placeholder="Adicione notas de revisão aqui..."
+                            placeholder="Deixe observações, feedbacks de vídeos, etc..."
+                            onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
+                            onBlur={(e) => e.target.style.borderColor = "rgba(0,0,0,0.08)"}
                         />
                         <button
                             onClick={async () => {
+                                setSaving(true);
                                 await supabase.from("submissions").update({ admin_notes: notes, updated_at: new Date().toISOString() }).eq("id", id);
-                                setSubmission({ ...submission, admin_notes: notes });
+                                setSubmission({ ...submission!, admin_notes: notes });
+                                setSaving(false);
                             }}
+                            disabled={saving}
                             style={{
-                                marginTop: 8, padding: "8px 16px", borderRadius: 8,
-                                fontSize: 12, fontWeight: 600, border: "none",
-                                background: "var(--bg-app)", cursor: "pointer",
+                                marginTop: 12, padding: "12px 16px", width: "100%", borderRadius: 10,
+                                fontSize: 13, fontWeight: 700, border: "none",
+                                background: "var(--bg-app)", color: "var(--text-primary)", cursor: "pointer",
+                                transition: "all 0.2s", display: "flex", justifyContent: "center", alignItems: "center", gap: 8
                             }}
                         >
-                            Salvar Notas
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            Salvar Anotação Privada
                         </button>
                     </div>
                 </div>
             </div>
+            <style>{`
+                @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in { animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                input:focus, textarea:focus, select:focus {
+                    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+                }
+            `}</style>
         </div>
     );
 }
