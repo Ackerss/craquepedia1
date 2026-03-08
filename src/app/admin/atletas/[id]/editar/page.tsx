@@ -21,6 +21,7 @@ export default function EditarAtletaPage() {
         full_name: "", sport_nickname: "", birth_date: "", phone: "", email: "",
         city: "", state: "", status: "ativo" as string,
     });
+    const [selectedSportId, setSelectedSportId] = useState<string>("");
     const [generalData, setGeneralData] = useState<Record<string, string>>({});
     const [sportData, setSportData] = useState<Record<string, string | number>>({});
 
@@ -44,6 +45,7 @@ export default function EditarAtletaPage() {
                     state: a.state || "",
                     status: a.status || "ativo",
                 });
+                setSelectedSportId(a.sport_id);
                 setGeneralData((a.general_data || {}) as Record<string, string>);
                 setSportData((a.sport_data || {}) as Record<string, string | number>);
             }
@@ -57,6 +59,8 @@ export default function EditarAtletaPage() {
         if (!athlete) return;
         setSaving(true);
 
+        const newSportName = sports.find(s => s.id === selectedSportId)?.name || athlete.sport_name;
+
         const { error } = await supabase.from("athletes").update({
             full_name: general.full_name,
             sport_nickname: general.sport_nickname,
@@ -66,6 +70,8 @@ export default function EditarAtletaPage() {
             city: general.city,
             state: general.state,
             status: general.status,
+            sport_id: selectedSportId,
+            sport_name: newSportName,
             general_data: generalData,
             sport_data: sportData,
             updated_at: new Date().toISOString(),
@@ -98,7 +104,7 @@ export default function EditarAtletaPage() {
         return (<div style={{ padding: 48, textAlign: "center" }}><p>Atleta não encontrado.</p><Link href="/admin/atletas">Voltar</Link></div>);
     }
 
-    const currentSport = sports.find((s) => s.id === athlete.sport_id);
+    const currentSport = sports.find((s) => s.id === selectedSportId);
     const specificFields = currentSport?.specific_fields as SportField[] || [];
 
     const inputStyle: React.CSSProperties = {
@@ -135,6 +141,12 @@ export default function EditarAtletaPage() {
                     <div><label style={labelStyle}>Cidade</label><input style={inputStyle} value={general.city} onChange={(e) => setGeneral({ ...general, city: e.target.value })} /></div>
                     <div><label style={labelStyle}>Estado</label><input style={inputStyle} value={general.state} onChange={(e) => setGeneral({ ...general, state: e.target.value })} /></div>
                     <div>
+                        <label style={labelStyle}>Esporte/Modalidade</label>
+                        <select style={inputStyle} value={selectedSportId} onChange={(e) => setSelectedSportId(e.target.value)}>
+                            {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
                         <label style={labelStyle}>Status</label>
                         <select style={inputStyle} value={general.status} onChange={(e) => setGeneral({ ...general, status: e.target.value })}>
                             <option value="ativo">Ativo</option>
@@ -163,7 +175,7 @@ export default function EditarAtletaPage() {
             {specificFields.length > 0 && (
                 <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
-                        {currentSport?.icon} Dados de {athlete.sport_name}
+                        {currentSport?.icon} Dados Técnicos de {currentSport?.name}
                     </h3>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                         {specificFields.map((field) => {

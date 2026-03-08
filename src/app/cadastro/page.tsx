@@ -193,8 +193,8 @@ export default function CadastroPage() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                            gap: 20,
+                            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                            gap: 16,
                             width: "100%",
                             animation: "fadeUp 0.8s ease-out"
                         }}
@@ -206,53 +206,51 @@ export default function CadastroPage() {
                                 className="sport-card"
                                 style={{
                                     display: "flex",
-                                    flexDirection: "column",
+                                    alignItems: "center",
                                     background: "#13131a",
-                                    borderRadius: 20,
+                                    borderRadius: 16,
                                     border: "1px solid rgba(255,255,255,0.06)",
+                                    padding: 14,
+                                    gap: 16,
                                     textDecoration: "none",
                                     color: "inherit",
                                     transition: "all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1)",
                                     cursor: "pointer",
                                     position: "relative",
-                                    overflow: "hidden",
                                     animationDelay: `${idx * 0.05}s`
                                 }}
                             >
                                 {/* Imagem artística do Stitch */}
                                 <div style={{
-                                    width: "100%",
-                                    height: 130,
+                                    width: 84,
+                                    height: 84,
+                                    borderRadius: 12,
                                     position: "relative",
                                     overflow: "hidden",
                                     background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+                                    flexShrink: 0,
                                 }}>
                                     {SPORT_IMAGES[sport.slug] ? (
                                         <Image
                                             src={SPORT_IMAGES[sport.slug]}
                                             alt={`Arte ${sport.name}`}
                                             fill
-                                            style={{ objectFit: "cover", opacity: 0.85, transition: "transform 0.5s, opacity 0.5s" }}
-                                            sizes="(max-width: 768px) 100vw, 33vw"
+                                            style={{ objectFit: "cover", opacity: 0.9, transition: "transform 0.5s, opacity 0.5s" }}
+                                            sizes="84px"
                                         />
                                     ) : (
-                                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64 }}>
+                                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
                                             {sport.icon && sport.icon.length <= 2 ? sport.icon : "🏆"}
                                         </div>
                                     )}
-                                    {/* Gradient overlay */}
-                                    <div style={{
-                                        position: "absolute", bottom: 0, left: 0, right: 0, height: "60%",
-                                        background: "linear-gradient(to top, #13131a, transparent)",
-                                    }}></div>
                                 </div>
 
                                 {/* Conteúdo do card */}
-                                <div style={{ padding: "20px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                                        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9" }}>{sport.name}</h3>
+                                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9" }}>{sport.name}</h3>
                                         <div className="card-arrow" style={{
-                                            width: 32, height: 32, borderRadius: "50%",
+                                            width: 28, height: 28, borderRadius: "50%",
                                             background: "rgba(59, 130, 246, 0.1)",
                                             display: "flex", alignItems: "center", justifyContent: "center",
                                             transition: "all 0.3s", color: "#3b82f6",
@@ -261,7 +259,10 @@ export default function CadastroPage() {
                                             <ArrowRight size={14} />
                                         </div>
                                     </div>
-                                    <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6, flex: 1 }}>
+                                    <p style={{
+                                        fontSize: 13, color: "#94a3b8", lineHeight: 1.4,
+                                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+                                    }}>
                                         {SPORT_DESCRIPTIONS[sport.slug] || "Preencha seu currículo esportivo com todos os dados técnicos dessa modalidade."}
                                     </p>
                                 </div>
