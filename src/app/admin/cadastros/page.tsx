@@ -134,8 +134,15 @@ export default function CadastrosPage() {
                                 <tr key={sub.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
                                     <td style={{ padding: "14px 20px" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--primary-color)", flexShrink: 0 }}>
-                                                {(sub.full_name || "?").charAt(0)}
+                                            <div style={{ position: "relative", width: 36, height: 36, borderRadius: "50%", background: (sub as unknown as Record<string, unknown>).photo_url ? "transparent" : "var(--bg-app)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--primary-color)", flexShrink: 0, overflow: "hidden" }}>
+                                                {(sub as unknown as Record<string, unknown>).photo_url ? (
+                                                    <img src={(sub as unknown as Record<string, unknown>).photo_url as string} alt={sub.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                                ) : (
+                                                    (sub.full_name || "?").charAt(0)
+                                                )}
+                                                {!!(sub as unknown as Record<string, unknown>).photo_url && (
+                                                    <div style={{ position: "absolute", bottom: -1, right: -1, width: 12, height: 12, borderRadius: "50%", background: "#10b981", border: "2px solid #fff" }} title="Tem foto" />
+                                                )}
                                             </div>
                                             <div>
                                                 <p style={{ fontWeight: 600, fontSize: 14 }}>{sub.full_name}</p>

@@ -137,11 +137,16 @@ export default function AtletasPage() {
                             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                                 <div style={{
                                     width: 48, height: 48, borderRadius: "50%",
-                                    background: "linear-gradient(135deg, var(--primary-color), #7c3aed)",
+                                    background: athlete.photo_url ? "transparent" : "linear-gradient(135deg, var(--primary-color), #7c3aed)",
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     color: "#fff", fontWeight: 700, fontSize: 18, flexShrink: 0,
+                                    overflow: "hidden",
                                 }}>
-                                    {athlete.full_name.charAt(0)}
+                                    {athlete.photo_url ? (
+                                        <img src={athlete.photo_url} alt={athlete.full_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    ) : (
+                                        athlete.full_name.charAt(0)
+                                    )}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 2 }}>
