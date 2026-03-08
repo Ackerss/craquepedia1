@@ -126,6 +126,7 @@ export default function CurriculoEditorPage() {
     const saveCurriculo = async () => {
         setSaving(true);
         if (service) {
+            // Salva os dados do currículo no serviço
             await supabase
                 .from("athlete_services")
                 .update({
@@ -134,6 +135,33 @@ export default function CurriculoEditorPage() {
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", service.id);
+
+            // Sincroniza dados editados de volta para o perfil do atleta
+            if (athlete) {
+                const currentGd = (athlete.general_data || {}) as Record<string, string>;
+                await supabase
+                    .from("athletes")
+                    .update({
+                        full_name: cv.nome_completo || athlete.full_name,
+                        sport_nickname: cv.nome_esportivo || athlete.sport_nickname,
+                        birth_date: cv.data_nascimento || athlete.birth_date,
+                        phone: cv.telefone || athlete.phone,
+                        email: cv.email || athlete.email,
+                        city: cv.cidade || athlete.city,
+                        state: cv.estado || athlete.state,
+                        general_data: {
+                            ...currentGd,
+                            altura: cv.altura || currentGd.altura || "",
+                            peso: cv.peso || currentGd.peso || "",
+                            instagram: cv.instagram || currentGd.instagram || "",
+                            bio: cv.bio || currentGd.bio || "",
+                            conquistas: cv.conquistas || currentGd.conquistas || "",
+                            historico_esportivo: cv.historico_esportivo || currentGd.historico_esportivo || "",
+                            links_video: cv.links_video || currentGd.links_video || "",
+                        },
+                    })
+                    .eq("id", athlete.id);
+            }
         }
         setSaving(false);
     };
@@ -159,7 +187,14 @@ export default function CurriculoEditorPage() {
     };
 
     const updateField = (field: keyof CurriculoData, value: string) => {
-        setCv((prev) => ({ ...prev, [field]: value }));
+        setCv((prev) => {
+            const updated = { ...prev, [field]: value };
+            // Recalcular idade automaticamente quando altera data de nascimento
+            if (field === "data_nascimento") {
+                updated.idade = calcIdade(value);
+            }
+            return updated;
+        });
     };
 
     if (loading) {
@@ -248,11 +283,11 @@ export default function CurriculoEditorPage() {
                         .a4-page {
                             box-shadow: none !important;
                             width: 210mm !important;
-                            height: 297mm !important;
-                            min-height: 297mm !important;
+                            min-height: auto !important;
+                            height: auto !important;
                             margin: 0 !important;
                             position: relative !important;
-                            page-break-after: always;
+                            page-break-inside: avoid;
                         }
                     }
 
