@@ -8,14 +8,12 @@ import { supabase } from "@/lib/supabase/client";
 import type { Sport } from "@/lib/supabase/types";
 
 const SPORT_DESCRIPTIONS: Record<string, string> = {
-    futebol: "Monte seu currículo esportivo completo com estatísticas de campo",
+    "futebol-futsal": "Monte seu currículo esportivo completo com estatísticas de campo e quadra",
     natacao: "Registre seus tempos, provas e conquistas na piscina",
     "artes-marciais": "Documente sua graduação, lutas e conquistas nos tatames",
     volei: "Crie seu perfil com posição, estatísticas e torneios disputados",
     basquete: "Organize suas métricas, posição e trajetória nas quadras",
-    atletismo: "Registre marcas pessoais, provas e competições",
-    futsal: "Monte seu perfil com posição, clubes e histórico competitivo",
-    corrida: "Documente seus tempos, distâncias e provas concluídas",
+    atletismo: "Registre marcas pessoais, provas e competições no atletismo",
     handebol: "Organize posição, equipes e conquistas no handebol",
     ginastica: "Registre aparelhos, notas e competições da ginástica",
     tenis: "Documente ranking, torneios e evolução no tênis",
@@ -25,14 +23,12 @@ const SPORT_DESCRIPTIONS: Record<string, string> = {
 
 // Mapeamento de slug do esporte para o arquivo de imagem do Stitch
 const SPORT_IMAGES: Record<string, string> = {
-    futebol: "/sports/futebol.png",
+    "futebol-futsal": "/sports/futebol.png",
     natacao: "/sports/natacao.png",
     "artes-marciais": "/sports/artes-marciais.png",
     volei: "/sports/volei.png",
     basquete: "/sports/basquete.png",
     atletismo: "/sports/atletismo.png",
-    futsal: "/sports/futsal.png",
-    corrida: "/sports/corrida.png",
     handebol: "/sports/handebol.png",
     ginastica: "/sports/ginastica.png",
     tenis: "/sports/tenis.png",
