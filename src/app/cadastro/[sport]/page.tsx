@@ -337,7 +337,47 @@ export default function CadastroEsportePage() {
                                     </div>
                                     <div>
                                         <label style={labelStyle}>Data de Nascimento *</label>
-                                        <input style={inputStyle} type="date" value={general.birth_date} onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })} />
+                                        <div style={{ position: "relative" }}>
+                                            <input
+                                                style={inputStyle}
+                                                type="text"
+                                                inputMode="numeric"
+                                                placeholder="DD/MM/AAAA"
+                                                maxLength={10}
+                                                value={general.birth_date ? (() => {
+                                                    const parts = general.birth_date.split("-");
+                                                    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : general.birth_date;
+                                                })() : ""}
+                                                onChange={(e) => {
+                                                    let v = e.target.value.replace(/\D/g, "");
+                                                    if (v.length > 8) v = v.slice(0, 8);
+                                                    if (v.length >= 5) v = v.slice(0, 2) + "/" + v.slice(2, 4) + "/" + v.slice(4);
+                                                    else if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2);
+                                                    // Converter DD/MM/AAAA → YYYY-MM-DD para salvar
+                                                    const match = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                                                    if (match) {
+                                                        setGeneral({ ...general, birth_date: `${match[3]}-${match[2]}-${match[1]}` });
+                                                    } else {
+                                                        // Salvar temporariamente o texto parcial como está para manter a digitação fluida
+                                                        setGeneral({ ...general, birth_date: v.includes("/") ? v : v });
+                                                    }
+                                                }}
+                                                onBlur={() => {
+                                                    // Ao sair do campo, validar se é uma data completa
+                                                    const match = general.birth_date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                                                    if (match) {
+                                                        setGeneral({ ...general, birth_date: `${match[3]}-${match[2]}-${match[1]}` });
+                                                    }
+                                                }}
+                                            />
+                                            <input
+                                                type="date"
+                                                style={{ position: "absolute", right: 0, top: 0, width: 42, height: "100%", opacity: 0, cursor: "pointer" }}
+                                                value={general.birth_date.match(/^\d{4}-\d{2}-\d{2}$/) ? general.birth_date : ""}
+                                                onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })}
+                                            />
+                                            <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: 18 }}>📅</span>
+                                        </div>
                                     </div>
                                     <div>
                                         <label style={labelStyle}>Nome do Responsável Legal</label>
