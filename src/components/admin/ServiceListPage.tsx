@@ -11,6 +11,33 @@ import {
     type AthleteServiceWithAthlete,
 } from "@/lib/supabase/types";
 
+// Mapeamento de emojis por esporte para identificação visual rápida
+const SPORT_EMOJI: Record<string, string> = {
+    "futebol": "⚽", "futsal": "⚽", "futebol / futsal": "⚽",
+    "basquete": "🏀", "vôlei": "🏐", "volei": "🏐",
+    "tênis": "🎾", "tenis": "🎾", "natação": "🏊", "natacao": "🏊",
+    "atletismo": "🏃", "ciclismo": "🚴", "surf": "🏄",
+    "ginástica": "🤸", "ginastica": "🤸", "handebol": "🤾",
+    "artes marciais": "🥋", "jiu-jitsu": "🥋", "judô": "🥋", "karate": "🥋",
+    "boxe": "🥊", "mma": "🥊", "muay thai": "🥊",
+    "golfe": "⛳", "rugby": "🏉", "beisebol": "⚾",
+    "esgrima": "🤺", "skate": "🛹", "snowboard": "🏂",
+    "hóquei": "🏒", "polo aquático": "🤽", "remo": "🚣",
+    "escalada": "🧗", "tênis de mesa": "🏓", "badminton": "🏸",
+};
+
+function getSportEmoji(sportName: string): string {
+    if (!sportName) return "🏅";
+    const key = sportName.toLowerCase().trim();
+    // Busca exata
+    if (SPORT_EMOJI[key]) return SPORT_EMOJI[key];
+    // Busca parcial
+    for (const [sport, emoji] of Object.entries(SPORT_EMOJI)) {
+        if (key.includes(sport) || sport.includes(key)) return emoji;
+    }
+    return "🏅";
+}
+
 interface ServicePageProps {
     serviceType: ServiceType;
     title: string;
@@ -34,6 +61,7 @@ export default function ServiceListPage({
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<string>("todos");
+    const [filterSport, setFilterSport] = useState<string>("todos");
 
     useEffect(() => {
         async function load() {
@@ -64,13 +92,19 @@ export default function ServiceListPage({
         }
     };
 
+    // Extrair lista única de esportes para o filtro
+    const uniqueSports = Array.from(
+        new Set(services.map((s) => s.athletes?.sport_name).filter(Boolean))
+    ).sort() as string[];
+
     const filtered = services.filter((s) => {
         const athlete = s.athletes;
         const matchSearch =
             (athlete?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             (athlete?.sport_nickname || "").toLowerCase().includes(searchTerm.toLowerCase());
         const matchStatus = filterStatus === "todos" || s.status === filterStatus;
-        return matchSearch && matchStatus;
+        const matchSport = filterSport === "todos" || athlete?.sport_name === filterSport;
+        return matchSearch && matchStatus && matchSport;
     });
 
     // Agrupar por status
@@ -161,6 +195,16 @@ export default function ServiceListPage({
                         }}
                     />
                 </div>
+                <select
+                    value={filterSport}
+                    onChange={(e) => setFilterSport(e.target.value)}
+                    style={{ padding: "9px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 12, fontFamily: "inherit" }}
+                >
+                    <option value="todos">🏅 Todos os Esportes</option>
+                    {uniqueSports.map((sport) => (
+                        <option key={sport} value={sport}>{getSportEmoji(sport)} {sport}</option>
+                    ))}
+                </select>
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -296,7 +340,8 @@ export default function ServiceListPage({
                                                             <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                                                 {athlete.sport_nickname || athlete.full_name}
                                                             </h4>
-                                                            <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                            <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>
+                                                                <span style={{ fontSize: 13, lineHeight: 1 }}>{getSportEmoji(athlete.sport_name)}</span>
                                                                 {athlete.sport_name} {athlete.city ? `• ${athlete.city}` : ""}
                                                             </p>
                                                         </div>
@@ -347,14 +392,14 @@ export default function ServiceListPage({
                                                             <Link
                                                                 href={`/admin/${serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos"}/${athlete.id}`}
                                                                 style={{
-                                                                    padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+                                                                    padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
                                                                     color: "#fff", background: "linear-gradient(135deg, #0f172a, #1e40af)",
-                                                                    display: "inline-flex", alignItems: "center", gap: 4, marginLeft: "auto",
-                                                                    textDecoration: "none", boxShadow: "0 1px 4px rgba(15,23,42,0.15)",
-                                                                    transition: "all 0.2s",
+                                                                    display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto",
+                                                                    textDecoration: "none", boxShadow: "0 2px 8px rgba(15,23,42,0.25)",
+                                                                    transition: "all 0.2s", whiteSpace: "nowrap",
                                                                 }}
                                                             >
-                                                                Abrir <ArrowRight size={12} />
+                                                                ✏️ Abrir <ArrowRight size={12} />
                                                             </Link>
                                                         )}
                                                     </div>
