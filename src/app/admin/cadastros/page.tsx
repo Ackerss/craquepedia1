@@ -6,6 +6,29 @@ import { Search, Filter, Loader2, Eye, ClipboardList, Trash2, AlertTriangle, X }
 import { supabase } from "@/lib/supabase/client";
 import { STATUS_LABELS, type Submission } from "@/lib/supabase/types";
 
+const SPORT_EMOJI: Record<string, string> = {
+    "futebol": "⚽", "futsal": "⚽", "futebol / futsal": "⚽",
+    "basquete": "🏀", "vôlei": "🏐", "volei": "🏐",
+    "tênis": "🎾", "tenis": "🎾", "natação": "🏊", "natacao": "🏊",
+    "atletismo": "🏃", "ciclismo": "🚴", "surf": "🏄",
+    "ginástica": "🤸", "ginastica": "🤸", "handebol": "🤾",
+    "artes marciais": "🥋", "jiu-jitsu": "🥋", "judô": "🥋", "karate": "🥋",
+    "boxe": "🥊", "mma": "🥊", "muay thai": "🥊",
+    "golfe": "⛳", "rugby": "🏉", "beisebol": "⚾",
+    "esgrima": "🤺", "skate": "🛹", "snowboard": "🏂",
+    "hóquei": "🏒", "polo aquático": "🤽", "remo": "🚣",
+    "escalada": "🧗", "tênis de mesa": "🏓", "badminton": "🏸",
+};
+function getSportEmoji(name: string): string {
+    if (!name) return "🏅";
+    const key = name.toLowerCase().trim();
+    if (SPORT_EMOJI[key]) return SPORT_EMOJI[key];
+    for (const [sport, emoji] of Object.entries(SPORT_EMOJI)) {
+        if (key.includes(sport) || sport.includes(key)) return emoji;
+    }
+    return "🏅";
+}
+
 export default function CadastrosPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
@@ -110,8 +133,8 @@ export default function CadastrosPage() {
                     onChange={(e) => setFilterSport(e.target.value)}
                     style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit" }}
                 >
-                    <option value="todos">Todas Modalidades</option>
-                    {sports.map((s) => <option key={s} value={s}>{s}</option>)}
+                    <option value="todos">🏅 Todas Modalidades</option>
+                    {sports.map((s) => <option key={s} value={s}>{getSportEmoji(s)} {s}</option>)}
                 </select>
             </div>
 
@@ -150,7 +173,7 @@ export default function CadastrosPage() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td style={{ padding: "14px 16px", fontSize: 13 }}>{sub.sport_name}</td>
+                                    <td style={{ padding: "14px 16px", fontSize: 13 }}>{getSportEmoji(sub.sport_name)} {sub.sport_name}</td>
                                     <td style={{ padding: "14px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
                                         {new Date(sub.created_at).toLocaleDateString("pt-BR")}
                                     </td>

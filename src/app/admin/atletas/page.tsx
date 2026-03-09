@@ -6,6 +6,29 @@ import { Search, Filter, Plus, Loader2, Users, MapPin, Eye, Instagram, Trash2, A
 import { supabase } from "@/lib/supabase/client";
 import { STATUS_LABELS, type Athlete } from "@/lib/supabase/types";
 
+const SPORT_EMOJI: Record<string, string> = {
+    "futebol": "⚽", "futsal": "⚽", "futebol / futsal": "⚽",
+    "basquete": "🏀", "vôlei": "🏐", "volei": "🏐",
+    "tênis": "🎾", "tenis": "🎾", "natação": "🏊", "natacao": "🏊",
+    "atletismo": "🏃", "ciclismo": "🚴", "surf": "🏄",
+    "ginástica": "🤸", "ginastica": "🤸", "handebol": "🤾",
+    "artes marciais": "🥋", "jiu-jitsu": "🥋", "judô": "🥋", "karate": "🥋",
+    "boxe": "🥊", "mma": "🥊", "muay thai": "🥊",
+    "golfe": "⛳", "rugby": "🏉", "beisebol": "⚾",
+    "esgrima": "🤺", "skate": "🛹", "snowboard": "🏂",
+    "hóquei": "🏒", "polo aquático": "🤽", "remo": "🚣",
+    "escalada": "🧗", "tênis de mesa": "🏓", "badminton": "🏸",
+};
+function getSportEmoji(name: string): string {
+    if (!name) return "🏅";
+    const key = name.toLowerCase().trim();
+    if (SPORT_EMOJI[key]) return SPORT_EMOJI[key];
+    for (const [sport, emoji] of Object.entries(SPORT_EMOJI)) {
+        if (key.includes(sport) || sport.includes(key)) return emoji;
+    }
+    return "🏅";
+}
+
 export default function AtletasPage() {
     const [athletes, setAthletes] = useState<Athlete[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,8 +128,8 @@ export default function AtletasPage() {
                 </div>
                 <select value={filterSport} onChange={(e) => setFilterSport(e.target.value)}
                     style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit" }}>
-                    <option value="todos">Todas Modalidades</option>
-                    {sports.map((s) => <option key={s} value={s}>{s}</option>)}
+                    <option value="todos">🏅 Todas Modalidades</option>
+                    {sports.map((s) => <option key={s} value={s}>{getSportEmoji(s)} {s}</option>)}
                 </select>
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
                     style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit" }}>
@@ -152,8 +175,8 @@ export default function AtletasPage() {
                                     <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 2 }}>
                                         {athlete.sport_nickname || athlete.full_name}
                                     </h3>
-                                    <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                                        {athlete.sport_name}
+                                    <p style={{ fontSize: 12, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
+                                        <span style={{ fontSize: 14 }}>{getSportEmoji(athlete.sport_name)}</span> {athlete.sport_name}
                                     </p>
                                 </div>
                                 <span style={{

@@ -134,8 +134,8 @@ export default function EditarAtletaPage() {
 
     return (
         <div style={{ padding: "28px 32px", maxWidth: 800, margin: "0 auto" }} className="animate-fade-in">
-            <Link href="/admin/atletas" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", marginBottom: 16, fontWeight: 500 }}>
-                <ArrowLeft size={16} /> Voltar aos atletas
+            <Link href="/admin/atletas" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 16, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
+                <ArrowLeft size={16} /> ← Voltar aos Atletas
             </Link>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>

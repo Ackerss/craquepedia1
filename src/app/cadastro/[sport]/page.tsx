@@ -70,6 +70,7 @@ export default function CadastroEsportePage() {
         historico_esportivo: "",
         conquistas: "",
         links_video: "",
+        indicacao: "",
     });
 
     const [sportData, setSportData] = useState<Record<string, string | number>>({});
@@ -173,6 +174,7 @@ export default function CadastroEsportePage() {
                 historico_esportivo: general.historico_esportivo,
                 conquistas: general.conquistas,
                 links_video: general.links_video,
+                indicacao: general.indicacao,
             },
             sport_data: finalSportData,
             photo_url: photoUrl,
@@ -457,6 +459,18 @@ export default function CadastroEsportePage() {
                                         </select>
                                     </div>
                                 </div>
+
+                                {/* Indicação */}
+                                <div style={{ marginTop: 28, paddingTop: 24, borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                                        🤝 Indicação
+                                    </h3>
+                                    <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14, lineHeight: 1.5 }}>Se alguém indicou o Craquepedia para você (pessoa, academia, centro de treinamento, etc.), informe abaixo.</p>
+                                    <div>
+                                        <label style={labelStyle}>Quem indicou? (Opcional)</label>
+                                        <input style={inputStyle} value={general.indicacao} onChange={(e) => setGeneral({ ...general, indicacao: e.target.value })} placeholder="Nome da pessoa, academia ou centro de treinamento" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -606,6 +620,12 @@ export default function CadastroEsportePage() {
                                         ].filter(([, v]) => v).map(([label, value]) => (
                                             <div key={label}><span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{label}</span><p style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>{value}</p></div>
                                         ))}
+                                        {general.indicacao && (
+                                            <div style={{ gridColumn: "1 / -1", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+                                                <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>🤝 Indicação</span>
+                                                <p style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>{general.indicacao}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

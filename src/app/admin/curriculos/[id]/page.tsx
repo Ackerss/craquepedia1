@@ -571,8 +571,8 @@ export default function CurriculoEditorPage() {
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
-                    <Link href="/admin/curriculos" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", marginBottom: 12, fontWeight: 500 }}>
-                        <ArrowLeft size={16} /> Voltar aos Currículos
+                    <Link href="/admin/curriculos" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
+                        <ArrowLeft size={16} /> ← Voltar aos Currículos
                     </Link>
                     <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>
                         📄 Currículo — {athlete.sport_nickname || athlete.full_name}
