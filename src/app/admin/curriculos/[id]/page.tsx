@@ -374,14 +374,20 @@ export default function CurriculoEditorPage() {
                                 <div style={{ display: "inline-block", padding: "4px 12px", background: "rgba(59, 130, 246, 0.2)", border: "1px solid rgba(59, 130, 246, 0.4)", color: "#93c5fd", borderRadius: 20, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 12 }}>
                                     {cv.modalidade || "Modalidade Não Informada"}
                                 </div>
-                                <h1 style={{ fontSize: 38, fontWeight: 800, marginBottom: 8, letterSpacing: "-0.5px", textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
+                                <h1 style={{ fontSize: 38, fontWeight: 800, marginBottom: 4, letterSpacing: "-0.5px", textShadow: "0 2px 4px rgba(0,0,0,0.3)", lineHeight: 1.1 }}>
                                     {cv.nome_esportivo || cv.nome_completo}
                                 </h1>
+                                {cv.nome_esportivo && cv.nome_esportivo !== cv.nome_completo && (
+                                    <h2 style={{ fontSize: 16, fontWeight: 500, color: "#94a3b8", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                                        <User size={14} />
+                                        {cv.nome_completo}
+                                    </h2>
+                                )}
                                 {cv.posicao && (
-                                    <h2 style={{ fontSize: 18, fontWeight: 400, color: "#cbd5e1", display: "flex", alignItems: "center", gap: 10 }}>
+                                    <h3 style={{ fontSize: 18, fontWeight: 400, color: "#cbd5e1", display: "flex", alignItems: "center", gap: 10, marginTop: cv.nome_esportivo && cv.nome_esportivo !== cv.nome_completo ? 0 : 8 }}>
                                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }}></div>
                                         {cv.posicao}
-                                    </h2>
+                                    </h3>
                                 )}
                             </div>
                         </div>
@@ -396,10 +402,14 @@ export default function CurriculoEditorPage() {
                             alignItems: "center"
                         }}>
                             <div style={{ display: "flex", gap: "48px" }}>
-                                {cv.idade && (
+                                {(cv.idade || cv.data_nascimento) && (
                                     <div>
-                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Idade</p>
-                                        <p style={{ fontSize: 16, fontWeight: 800 }}>{cv.idade} <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.9 }}>anos</span></p>
+                                        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8, marginBottom: 2 }}>Idade / Nascimento</p>
+                                        <p style={{ fontSize: 16, fontWeight: 800, display: "flex", alignItems: "baseline", gap: 6 }}>
+                                            {cv.idade && <span>{cv.idade} <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.9 }}>anos</span></span>}
+                                            {cv.idade && cv.data_nascimento && <span style={{ opacity: 0.5, fontSize: 14 }}>•</span>}
+                                            {cv.data_nascimento && <span style={{ fontSize: 13, fontWeight: 600 }}>{new Date(cv.data_nascimento).toLocaleDateString('pt-BR')}</span>}
+                                        </p>
                                     </div>
                                 )}
                                 {cv.altura && (
