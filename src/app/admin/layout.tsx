@@ -48,10 +48,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => {
-            setUser(data.user?.email || null);
+        let isMounted = true;
+
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (isMounted) {
+                if (!session) {
+                    router.push("/admin/login");
+                } else {
+                    setUser(session.user?.email || null);
+                }
+            }
+        };
+
+        checkSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (isMounted) {
+                if (!session) {
+                    // Se a sessão expirou silenciosamente, volta pro login pra renovar
+                    router.push("/admin/login");
+                } else {
+                    setUser(session.user?.email || null);
+                }
+            }
         });
-    }, []);
+
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+        };
+    }, [router]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

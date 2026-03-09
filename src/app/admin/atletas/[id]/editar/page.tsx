@@ -70,10 +70,17 @@ export default function EditarAtletaPage() {
             const fileName = `${Date.now()}_${general.full_name.replace(/\s+/g, '_')}.${fileExt}`;
             const { error: uploadError } = await supabase.storage
                 .from('athlete-photos')
-                .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
+                .upload(fileName, photoFile, { cacheControl: '3600', upsert: true }); // MUDADO: Upsert habilitado para evitar conflitos
+
             if (!uploadError) {
                 const { data: urlData } = supabase.storage.from('athlete-photos').getPublicUrl(fileName);
                 photoUrl = urlData.publicUrl;
+            } else {
+                console.error("Erro no upload da foto", uploadError);
+                // MUDADO: Se a foto falhou, alerta o usuário antes de prosseguir com dados quebrados
+                alert(`Aviso: A nova foto não pôde ser salva. A foto original será mantida.\nMotivo: ${uploadError.message}`);
+                // Mesmo com erro na foto o processo prosegue atualizando os dados textuais.
+                // Não precisa parar totalmente, mas o alerta informa o usuário na tela.
             }
         }
 

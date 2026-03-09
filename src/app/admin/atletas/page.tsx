@@ -44,12 +44,17 @@ export default function AtletasPage() {
         setDeleting(true);
         try {
             // Deleta serviços vinculados primeiro
-            await supabase.from("athlete_services").delete().eq("athlete_id", deleteTarget.id);
+            const { error: servicesError } = await supabase.from("athlete_services").delete().eq("athlete_id", deleteTarget.id);
+            if (servicesError) throw servicesError;
+
             // Deleta o atleta
-            await supabase.from("athletes").delete().eq("id", deleteTarget.id);
+            const { error: athleteError } = await supabase.from("athletes").delete().eq("id", deleteTarget.id);
+            if (athleteError) throw athleteError;
+
             setAthletes(prev => prev.filter(a => a.id !== deleteTarget.id));
-        } catch (err) {
+        } catch (err: any) {
             console.error("Erro ao excluir:", err);
+            alert(`Falha ao excluir o atleta.\nErro: ${err.message || 'Desconhecido'}`);
         } finally {
             setDeleteTarget(null);
             setDeleteConfirmText("");

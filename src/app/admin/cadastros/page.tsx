@@ -43,10 +43,16 @@ export default function CadastrosPage() {
         if (!deleteTarget || deleteConfirmText !== "EXCLUIR") return;
         setDeleting(true);
         try {
-            await supabase.from("submissions").delete().eq("id", deleteTarget.id);
-            setSubmissions(prev => prev.filter(s => s.id !== deleteTarget.id));
+            const { error } = await supabase.from("submissions").delete().eq("id", deleteTarget.id);
+            if (error) {
+                console.error("Erro ao excluir:", error);
+                alert(`Erro ao excluir: ${error.message}\n\nDica: Se este cadastro já foi aprovado e gerou um atleta, primeiro você deve excluir o Atleta.`);
+            } else {
+                setSubmissions(prev => prev.filter(s => s.id !== deleteTarget.id));
+            }
         } catch (err) {
-            console.error("Erro ao excluir:", err);
+            console.error("Erro inesperado ao excluir:", err);
+            alert("Ocorreu um erro inesperado de conexão.");
         } finally {
             setDeleteTarget(null);
             setDeleteConfirmText("");
