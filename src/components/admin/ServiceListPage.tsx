@@ -350,8 +350,24 @@ export default function ServiceListPage({
                                                     {/* Extra content */}
                                                     {renderExtra && renderExtra(service)}
 
-                                                    {/* Actions */}
-                                                    <div style={{ display: "flex", gap: 6, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-color)", flexWrap: "wrap" }}>
+                                                    {/* Abrir — linha dedicada, sempre visível */}
+                                                    {hasDetailPage && (
+                                                        <Link
+                                                            href={`/admin/${serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos"}/${athlete.id}`}
+                                                            style={{
+                                                                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                                                                marginTop: 10, padding: "8px 0", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                                                                color: "#fff", background: "linear-gradient(135deg, #0f172a, #1e40af)",
+                                                                textDecoration: "none", boxShadow: "0 2px 8px rgba(15,23,42,0.2)",
+                                                                transition: "all 0.2s", width: "100%",
+                                                            }}
+                                                        >
+                                                            ✏️ Abrir / Editar <ArrowRight size={14} />
+                                                        </Link>
+                                                    )}
+
+                                                    {/* Ações de status */}
+                                                    <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                                                         {col.key === "pendente" && (
                                                             <button
                                                                 onClick={() => updateServiceStatus(service.id, "em_andamento")}
@@ -387,20 +403,6 @@ export default function ServiceListPage({
                                                             >
                                                                 ↩ Reabrir
                                                             </button>
-                                                        )}
-                                                        {hasDetailPage && (
-                                                            <Link
-                                                                href={`/admin/${serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos"}/${athlete.id}`}
-                                                                style={{
-                                                                    padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-                                                                    color: "#fff", background: "linear-gradient(135deg, #0f172a, #1e40af)",
-                                                                    display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto",
-                                                                    textDecoration: "none", boxShadow: "0 2px 8px rgba(15,23,42,0.25)",
-                                                                    transition: "all 0.2s", whiteSpace: "nowrap",
-                                                                }}
-                                                            >
-                                                                ✏️ Abrir <ArrowRight size={12} />
-                                                            </Link>
                                                         )}
                                                     </div>
                                                 </div>
