@@ -9,6 +9,7 @@ export default function CartoesPage() {
             title="Cartões de Apresentação"
             subtitle="Gerencie os cartões de apresentação digital de cada atleta"
             icon="💳"
+            hasDetailPage={true}
         />
     );
 }
