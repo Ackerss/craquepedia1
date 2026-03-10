@@ -378,6 +378,7 @@ export default function CadastroEsportePage() {
                                                 style={{ position: "absolute", right: 0, top: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
                                                 value={general.birth_date.match(/^\d{4}-\d{2}-\d{2}$/) ? general.birth_date : ""}
                                                 onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })}
+                                                onClick={(e) => { try { (e.target as HTMLInputElement).showPicker(); } catch (e) { } }}
                                             />
                                             <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", fontSize: 18 }}>📅</span>
                                         </div>
