@@ -31,6 +31,7 @@
     color: var(--primary-color);
     font-weight: 800;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
 }
 
 .headerInfo h1 {
@@ -50,6 +51,7 @@
 .badges {
     display: flex;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .badge {
@@ -118,6 +120,79 @@
     letter-spacing: 0.5px;
 }
 
+.historyList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.historyItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+}
+
+.historyTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.historySubtitle {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.historyDestaque {
+    font-size: 13px;
+    color: #eab308;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.historyYear {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-align: right;
+}
+
+.conquistasList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.conquistaItem {
+    display: flex;
+    gap: 16px;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.conquistaYear {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+.conquistaContent h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #0f172a;
+}
+
+.conquistaContent p {
+    font-size: 13px;
+    color: #475569;
+}
+
 .sidebarTitle {
     font-size: 14px;
     font-weight: 700;
@@ -151,7 +226,289 @@
     font-weight: 600;
 }
 
-/* Painel de Controle de Impressão */
+.qualitiesList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.qualityPill {
+    background-color: #f1f5f9;
+    color: #334155;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.mediaList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mediaItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+
+/* --- PADRÃO 02 PREMIUM --- */
+.cvPremium {
+    display: flex;
+    flex-direction: row;
+    background-color: #ffffff;
+    color: #1a202c;
+    border-top: 8px solid #0f172a;
+}
+
+.cvPremiumSidebar {
+    width: 280px;
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 40px 30px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.premiumAvatarWrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.cvPremiumSidebar .avatar {
+    width: 150px;
+    height: 150px;
+    border: 4px solid #334155;
+    color: #0f172a;
+}
+
+.premiumSidebarTitle {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 8px;
+}
+
+.premiumInfoList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.premiumInfoItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #cbd5e1;
+}
+
+.premiumAttributes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.premiumAttributes div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.premiumAttributes small {
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.premiumAttributes strong {
+    font-size: 14px;
+    color: #f8fafc;
+}
+
+.premiumQualities {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.premiumQualities li {
+    font-size: 14px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.premiumQualities li::before {
+    content: "•";
+    color: #eab308;
+    font-size: 18px;
+}
+
+.cvPremiumMain {
+    flex: 1;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.premiumHeader h1 {
+    font-size: 42px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+    line-height: 1.1;
+    letter-spacing: -1px;
+}
+
+.premiumHeader h2 {
+    font-size: 20px;
+    font-weight: 400;
+    color: #eab308;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.premiumSectionTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.premiumSectionTitle::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 4px;
+    background-color: #eab308;
+}
+
+.premiumBio {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #475569;
+}
+
+.premiumGridStats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.premiumStatItem {
+    border-left: 2px solid #eab308;
+    padding-left: 16px;
+}
+
+.premiumStatValue {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.premiumStatLabel {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.premiumHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.premiumHistoryItem {
+    display: flex;
+    gap: 24px;
+}
+
+.premiumHistoryYear {
+    width: 80px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #eab308;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+
+.premiumHistoryContent h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.premiumHistoryContent h4 span {
+    font-weight: 400;
+    color: #64748b;
+}
+
+.premiumHistoryContent p {
+    font-size: 14px;
+    color: #475569;
+}
+
+.premiumConquistas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.premiumConquistaItem {
+    background: #f1f5f9;
+    padding: 16px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.premiumConquistaItem strong {
+    color: #eab308;
+    font-size: 16px;
+}
+
+.premiumConquistaItem span {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.premiumMediaRow {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+
+
+/* --- Painel de Controle de Impressão --- */
 .printControls {
     background-color: var(--bg-card);
     padding: 24px;
@@ -163,6 +520,14 @@
     top: 0;
     z-index: 50;
     box-shadow: var(--shadow-sm);
+}
+
+.modelToggle {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 8px;
+    gap: 4px;
 }
 
 .btnAction {
@@ -181,6 +546,15 @@
 .btnPrimary {
     background-color: var(--primary-color);
     color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .btnPrimary:hover {
@@ -191,10 +565,30 @@
     background-color: white;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .btnSecondary:hover {
     background-color: var(--bg-app);
+}
+
+.btnActive {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: default;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 @media print {
@@ -211,5 +605,10 @@
         margin: 0;
         max-width: 100%;
         border-radius: 0;
+        border-top: none;
+    }
+
+    .cvPremium {
+        border-top: 8px solid #0f172a;
     }
 }
