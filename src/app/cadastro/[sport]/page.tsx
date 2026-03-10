@@ -139,7 +139,8 @@ export default function CadastroEsportePage() {
         // Upload da foto se fornecida
         if (photoFile) {
             const fileExt = photoFile.name.split('.').pop();
-            const fileName = `${Date.now()}_${general.full_name.replace(/\s+/g, '_')}.${fileExt}`;
+            const sanitizedName = general.full_name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+            const fileName = `${Date.now()}_${sanitizedName}.${fileExt}`;
             const { error: uploadError } = await supabase.storage
                 .from('athlete-photos')
                 .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
