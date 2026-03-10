@@ -51,6 +51,24 @@ function calcIdade(birthDate: string): string {
     }
 }
 
+// Helper to format text lists cleanly
+const renderListItems = (text: string) => {
+    if (!text) return null;
+    let items = text.split('\n').map(s => s.trim()).filter(Boolean);
+    if (items.length === 1 && items[0].includes(',')) {
+        items = items[0].split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (items.length === 1) return <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)", whiteSpace: "pre-wrap" }}>{items[0]}</p>;
+
+    return (
+        <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 8, fontSize: 14, color: "var(--text-secondary)", listStyleType: "disc" }}>
+            {items.map((item, idx) => (
+                <li key={idx} style={{ lineHeight: 1.6 }}>{item}</li>
+            ))}
+        </ul>
+    );
+};
+
 export default function CurriculoEditorPage() {
     const params = useParams();
     const router = useRouter();
@@ -63,8 +81,20 @@ export default function CurriculoEditorPage() {
     const [showPreview, setShowPreview] = useState(false);
     const [generated, setGenerated] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     const [modelo, setModelo] = useState<1 | 2>(1);
     const printRef = useRef<HTMLDivElement>(null);
+
+    // Prevent navigation if dirty
+    useEffect(() => {
+        if (!isDirty) return;
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
 
     const [cv, setCv] = useState<CurriculoData>({
         nome_esportivo: "", nome_completo: "", modalidade: "", posicao: "",
@@ -166,6 +196,7 @@ export default function CurriculoEditorPage() {
                     })
                     .eq("id", athlete.id);
             }
+            setIsDirty(false);
         }
         setSaving(false);
     };
@@ -181,6 +212,7 @@ export default function CurriculoEditorPage() {
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", service.id);
+            setIsDirty(false);
             setService({ ...service, status: "concluido" });
         }
         setSaving(false);
@@ -191,6 +223,7 @@ export default function CurriculoEditorPage() {
     };
 
     const updateField = (field: keyof CurriculoData, value: string) => {
+        setIsDirty(true);
         setCv((prev) => {
             const updated = { ...prev, [field]: value };
             // Recalcular idade automaticamente quando altera data de nascimento
@@ -609,13 +642,17 @@ export default function CurriculoEditorPage() {
                                         {cv.conquistas && (
                                             <div style={{ marginBottom: 32 }}>
                                                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", borderBottom: "2px solid #3b82f6", display: "inline-block", paddingBottom: 4, marginBottom: 16 }}>Conquistas e Títulos</h3>
-                                                <p style={{ fontSize: 14, lineHeight: 1.7, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.conquistas}</p>
+                                                <div style={{ color: "#334155" }}>
+                                                    {renderListItems(cv.conquistas)}
+                                                </div>
                                             </div>
                                         )}
                                         {cv.historico_esportivo && (
                                             <div style={{ marginBottom: 32 }}>
                                                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", borderBottom: "2px solid #3b82f6", display: "inline-block", paddingBottom: 4, marginBottom: 16 }}>Histórico Esportivo</h3>
-                                                <p style={{ fontSize: 14, lineHeight: 1.7, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.historico_esportivo}</p>
+                                                <div style={{ color: "#334155" }}>
+                                                    {renderListItems(cv.historico_esportivo)}
+                                                </div>
                                             </div>
                                         )}
                                         {cv.links_video && (
@@ -673,7 +710,11 @@ export default function CurriculoEditorPage() {
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
-                    <Link href="/admin/curriculos" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
+                    <Link href="/admin/curriculos" onClick={(e) => {
+                        if (isDirty && !window.confirm("Você tem alterações não salvas. Deseja sair sem salvar?")) {
+                            e.preventDefault();
+                        }
+                    }} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
                         <ArrowLeft size={16} /> ← Voltar aos Currículos
                     </Link>
                     <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>

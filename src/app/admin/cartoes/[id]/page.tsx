@@ -145,9 +145,21 @@ export default function CartaoEditorPage() {
     const [saving, setSaving] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [generated, setGenerated] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
 
     const [cartao, setCartao] = useState<CartaoData>({ ...EMPTY_CARTAO });
+
+    // Prevent navigation if dirty
+    useEffect(() => {
+        if (!isDirty) return;
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
 
     // ---- Load ----
     useEffect(() => {
@@ -239,6 +251,7 @@ export default function CartaoEditorPage() {
                     })
                     .eq("id", athlete.id);
             }
+            setIsDirty(false); // Reset dirty on save
         }
         setSaving(false);
     };
@@ -255,11 +268,13 @@ export default function CartaoEditorPage() {
                 })
                 .eq("id", service.id);
             setService({ ...service, status: "concluido" });
+            setIsDirty(false); // Reset dirty on save
         }
         setSaving(false);
     };
 
     const updateField = (field: keyof CartaoData, value: string) => {
+        setIsDirty(true);
         setCartao((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -692,7 +707,11 @@ export default function CartaoEditorPage() {
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
-                    <Link href="/admin/cartoes" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
+                    <Link href="/admin/cartoes" onClick={(e) => {
+                        if (isDirty && !window.confirm("Você tem alterações não salvas. Deseja sair sem salvar?")) {
+                            e.preventDefault();
+                        }
+                    }} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--primary-color)", marginBottom: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 8, border: "1.5px solid var(--primary-color)", background: "rgba(37,99,235,0.06)", transition: "all 0.2s", textDecoration: "none" }}>
                         <ArrowLeft size={16} /> ← Voltar aos Cartões
                     </Link>
                     <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 8 }}>
