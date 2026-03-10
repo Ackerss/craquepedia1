@@ -71,6 +71,7 @@ export interface Atleta {
     qualidades: string[];
     conquistas: Conquista[];
     historicoClubes: HistoricoClube[];
+    historico_esportivo?: string;
     estatisticas: Record<string, string | number>;
     materiaisEntregues: {
         curriculo: boolean;

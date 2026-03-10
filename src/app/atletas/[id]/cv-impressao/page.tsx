@@ -6,6 +6,24 @@ import styles from "./page.module.css";
 import { ArrowLeft, Printer, FileDown, MapPin, Mail, Phone, Trophy, PlayCircle } from "lucide-react";
 import { useStore } from "@/data/store";
 
+// Helper to format text lists cleanly
+const renderListItems = (text: string) => {
+    if (!text) return null;
+    let items = text.split('\n').map(s => s.trim()).filter(Boolean);
+    if (items.length === 1 && items[0].includes(',')) {
+        items = items[0].split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (items.length === 1) return <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)", whiteSpace: "pre-wrap" }}>{items[0]}</p>;
+
+    return (
+        <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "var(--text-secondary)", listStyleType: "disc" }}>
+            {items.map((item, idx) => (
+                <li key={idx} style={{ lineHeight: 1.6 }}>{item}</li>
+            ))}
+        </ul>
+    );
+};
+
 export default function CvImpressaoPage() {
     const params = useParams();
     const router = useRouter();
@@ -252,7 +270,7 @@ export default function CvImpressaoPage() {
                             </div>
                         </div>
 
-                        {((atleta.historicoClubes?.length ?? 0) > 0 || (atleta.clubes?.length ?? 0) > 0) && (
+                        {((atleta.historicoClubes?.length ?? 0) > 0 || (atleta.clubes?.length ?? 0) > 0 || atleta.historico_esportivo) && (
                             <div className={styles.premiumSection}>
                                 <h3 className={styles.premiumSectionTitle}>Histórico Esportivo</h3>
                                 <div className={styles.premiumHistory}>
@@ -265,21 +283,32 @@ export default function CvImpressaoPage() {
                                             </div>
                                         </div>
                                     ))}
+                                    {(atleta.historico_esportivo) && (
+                                        <div style={{ color: "var(--text-secondary)" }}>
+                                            {renderListItems(atleta.historico_esportivo)}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {(atleta.conquistas?.length > 0) && (
+                        {(atleta.conquistas) && (
                             <div className={styles.premiumSection}>
                                 <h3 className={styles.premiumSectionTitle}>Principais Conquistas</h3>
-                                <div className={styles.premiumConquistas}>
-                                    {atleta.conquistas.map((conquista, i) => (
-                                        <div key={i} className={styles.premiumConquistaItem}>
-                                            <strong>{conquista.ano}</strong>
-                                            <span>{conquista.titulo}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                {Array.isArray(atleta.conquistas) ? (
+                                    <div className={styles.premiumConquistas}>
+                                        {atleta.conquistas.map((conquista: any, i: number) => (
+                                            <div key={i} className={styles.premiumConquistaItem}>
+                                                <strong>{conquista.ano}</strong>
+                                                <span>{conquista.titulo}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: "var(--text-secondary)" }}>
+                                        {renderListItems(atleta.conquistas)}
+                                    </div>
+                                )}
                             </div>
                         )}
 

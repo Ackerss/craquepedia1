@@ -503,7 +503,9 @@ export default function CurriculoEditorPage() {
                                                     </h3>
                                                 </div>
                                                 <div style={{ paddingLeft: 16, borderLeft: "2px solid #e2e8f0" }}>
-                                                    <p style={{ fontSize: 14, lineHeight: 1.8, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.historico_esportivo}</p>
+                                                    <div style={{ color: "#334155" }}>
+                                                        {renderListItems(cv.historico_esportivo)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -519,7 +521,9 @@ export default function CurriculoEditorPage() {
                                                     </h3>
                                                 </div>
                                                 <div style={{ background: "#fafafa", borderRadius: 12, padding: "20px 24px", border: "1px solid #e2e8f0" }}>
-                                                    <p style={{ fontSize: 14, lineHeight: 1.8, color: "#334155", whiteSpace: "pre-wrap" }}>{cv.conquistas}</p>
+                                                    <div style={{ color: "#334155" }}>
+                                                        {renderListItems(cv.conquistas)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
