@@ -103,7 +103,7 @@ export default function NovoAtletaPage() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                         <div><label style={labelStyle}>Nome Completo *</label><input style={inputStyle} required value={general.full_name} onChange={(e) => setGeneral({ ...general, full_name: e.target.value })} /></div>
                         <div><label style={labelStyle}>Nome Esportivo</label><input style={inputStyle} value={general.sport_nickname} onChange={(e) => setGeneral({ ...general, sport_nickname: e.target.value })} /></div>
-                        <div><label style={labelStyle}>Data de Nascimento</label><input style={inputStyle} type="date" value={general.birth_date} onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })} onClick={(e) => { try { (e.target as HTMLInputElement).showPicker(); } catch (e) { } }} /></div>
+                        <div><label style={labelStyle}>Data de Nascimento</label><input style={inputStyle} type="date" value={general.birth_date} onChange={(e) => setGeneral({ ...general, birth_date: e.target.value })} /></div>
                         <div><label style={labelStyle}>WhatsApp</label><input style={inputStyle} value={general.phone} onChange={(e) => setGeneral({ ...general, phone: e.target.value })} /></div>
                         <div><label style={labelStyle}>E-mail</label><input style={inputStyle} type="email" value={general.email} onChange={(e) => setGeneral({ ...general, email: e.target.value })} /></div>
                         <div><label style={labelStyle}>Cidade</label><input style={inputStyle} value={general.city} onChange={(e) => setGeneral({ ...general, city: e.target.value })} /></div>

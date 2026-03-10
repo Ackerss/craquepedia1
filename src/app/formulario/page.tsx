@@ -80,7 +80,7 @@ export default function FormularioApp() {
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Data de Nascimento*</label>
-                                <input type="date" className={styles.inputField} onClick={(e) => { try { (e.target as HTMLInputElement).showPicker(); } catch (e) { } }} />
+                                <input type="date" className={styles.inputField} />
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Gênero*</label>
