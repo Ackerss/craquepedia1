@@ -73,8 +73,9 @@ export default function PortfolioEditorPage() {
         load();
     }, [athleteId]);
 
-    const generateFromAthlete = () => {
+    const generateFromAthlete = async () => {
         if (!athlete) return;
+        setSaving(true);
         const gd = (athlete.general_data || {}) as Record<string, string>;
         const sd = (athlete.sport_data || {}) as Record<string, string>;
         
@@ -116,7 +117,20 @@ export default function PortfolioEditorPage() {
 
         setPortfolioData(newPortfolio);
         setGenerated(true);
-        setIsDirty(true);
+        setIsDirty(false); // Saved directly below
+        
+        if (service) {
+            await supabase
+                .from("athlete_services")
+                .update({
+                    data: newPortfolio as unknown as Record<string, unknown>,
+                    status: "em_andamento",
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", service.id);
+            setService({ ...service, status: "em_andamento" });
+        }
+        setSaving(false);
     };
 
     const savePortfolio = async (status: "em_andamento" | "concluido" = "em_andamento") => {
