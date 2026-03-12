@@ -328,61 +328,25 @@ export default function AtletaProfile() {
                 {/* ================== PORTFÓLIO DIGITAL ================== */}
                 {activeTab === "Portfólio" && (
                     <div className={styles.portfolioContainer}>
-                        <div className={styles.portfolioHero} style={{ background: `linear-gradient(135deg, ${sportColor}dd, ${sportColor}66)` }}>
-                            <div className={styles.portfolioHeroContent}>
-                                <div className={styles.portfolioHeroAvatar}>{atleta.avatar}</div>
-                                <h2 className={styles.portfolioHeroName}>{atleta.nomeEsportivo}</h2>
-                                <p className={styles.portfolioHeroSport}>{atleta.sport} • {atleta.pos}</p>
-                                <p className={styles.portfolioHeroBio}>{atleta.bio}</p>
+                        <div className={styles.cardInfo} style={{ textAlign: "center", padding: "80px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <div style={{
+                                width: 80, height: 80, borderRadius: "50%", background: `${sportColor}20`,
+                                display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px"
+                            }}>
+                                <Globe size={40} color={sportColor} />
                             </div>
-                        </div>
-
-                        <div className={styles.portfolioGrid}>
-                            {/* Galeria de Fotos */}
-                            <div className={styles.cardInfo}>
-                                <h3 className={styles.cardTitle}>📷 Galeria de Fotos</h3>
-                                <div className={styles.photoGrid}>
-                                    {["Treino", "Jogo", "Celebração", "Retrato", "Aquecimento", "Pódio"].map((label, idx) => (
-                                        <div key={idx} className={styles.photoPlaceholder} style={{ backgroundColor: `${sportColor}${15 + idx * 5}` }}>
-                                            <span className={styles.photoEmoji}>
-                                                {["⚽", "🏃", "🎉", "📸", "💪", "🏆"][idx]}
-                                            </span>
-                                            <span className={styles.photoLabel}>{label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Vídeos Destaque */}
-                            <div className={styles.cardInfo}>
-                                <h3 className={styles.cardTitle}>🎬 Vídeos de Destaque</h3>
-                                <div className={styles.videosGrid}>
-                                    {[
-                                        { titulo: "Melhores Momentos 2024", duracao: "4:32", views: "12.5K" },
-                                        { titulo: "Highlight Reel Completo", duracao: "6:18", views: "8.2K" },
-                                        { titulo: "Treino Intensivo", duracao: "3:45", views: "5.1K" },
-                                    ].map((video, idx) => (
-                                        <div key={idx} className={styles.videoCard}>
-                                            <div className={styles.videoThumb} style={{ backgroundColor: `${sportColor}30` }}>
-                                                <span className={styles.playBtn}>▶</span>
-                                            </div>
-                                            <div className={styles.videoInfo}>
-                                                <div className={styles.videoTitle}>{video.titulo}</div>
-                                                <div className={styles.videoMeta}>{video.duracao} • {video.views} views</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Depoimento */}
-                            <div className={styles.cardInfo} style={{ gridColumn: "1 / -1" }}>
-                                <h3 className={styles.cardTitle}>💬 Depoimento do Atleta</h3>
-                                <blockquote className={styles.quoteBlock}>
-                                    &ldquo;O esporte me ensinou disciplina, resiliência e trabalho em equipe. Cada treino é uma oportunidade de evoluir e mostrar o meu melhor. Meu objetivo é inspirar outras pessoas através da minha jornada.&rdquo;
-                                </blockquote>
-                                <p className={styles.quoteAuthor}>— {atleta.nomeEsportivo}, {atleta.pos}</p>
-                            </div>
+                            <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 16 }}>Apresentação Premium</h2>
+                            <p style={{ color: "var(--text-secondary)", maxWidth: 600, margin: "0 auto 32px", lineHeight: 1.6, fontSize: 16 }}>
+                                Este portfólio possui um design exclusivo em tela cheia, desenvolvido para garantir o máximo impacto visual em reuniões, apresentações para clubes e fechamento de patrocínios.
+                            </p>
+                            <Link href={`/p/${id}`} target="_blank" style={{
+                                display: "inline-flex", alignItems: "center", gap: 10,
+                                padding: "16px 36px", borderRadius: 12, background: "linear-gradient(135deg, " + sportColor + ", #1e293b)",
+                                color: "#fff", fontWeight: 700, textDecoration: "none", fontSize: 16,
+                                boxShadow: `0 8px 30px ${sportColor}40`, transition: "transform 0.2s",
+                            }}>
+                                <ExternalLink size={20} /> Acessar Portfólio em Tela Cheia
+                            </Link>
                         </div>
                     </div>
                 )}

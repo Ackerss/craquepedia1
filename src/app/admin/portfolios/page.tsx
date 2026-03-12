@@ -9,6 +9,7 @@ export default function PortfoliosPage() {
             title="Portfólios"
             subtitle="Gerencie os portfólios digitais de cada atleta"
             icon="🎨"
+            hasDetailPage={true}
         />
     );
 }

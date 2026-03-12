@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, Loader2, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -57,6 +58,7 @@ export default function ServiceListPage({
     hasDetailPage = false,
     renderExtra,
 }: ServicePageProps) {
+    const router = useRouter();
     const [services, setServices] = useState<AthleteServiceWithAthlete[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -370,7 +372,13 @@ export default function ServiceListPage({
                                                     <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                                                         {col.key === "pendente" && (
                                                             <button
-                                                                onClick={() => updateServiceStatus(service.id, "em_andamento")}
+                                                                onClick={async () => {
+                                                                    await updateServiceStatus(service.id, "em_andamento");
+                                                                    if (hasDetailPage) {
+                                                                        const basePath = serviceType === "curriculo" ? "curriculos" : serviceType === "portfolio" ? "portfolios" : serviceType === "cartao" ? "cartoes" : "videos";
+                                                                        router.push(`/admin/${basePath}/${athlete.id}`);
+                                                                    }
+                                                                }}
                                                                 style={{
                                                                     padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
                                                                     background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", cursor: "pointer",
@@ -381,28 +389,52 @@ export default function ServiceListPage({
                                                             </button>
                                                         )}
                                                         {col.key === "em_andamento" && (
-                                                            <button
-                                                                onClick={() => updateServiceStatus(service.id, "concluido")}
-                                                                style={{
-                                                                    padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                                                                    background: "rgba(16,185,129,0.1)", color: "#10b981", border: "none", cursor: "pointer",
-                                                                    transition: "background 0.2s",
-                                                                }}
-                                                            >
-                                                                ✅ Concluir
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => updateServiceStatus(service.id, "concluido")}
+                                                                    style={{
+                                                                        padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                        background: "rgba(16,185,129,0.1)", color: "#10b981", border: "none", cursor: "pointer",
+                                                                        transition: "background 0.2s",
+                                                                    }}
+                                                                >
+                                                                    ✅ Concluir
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => updateServiceStatus(service.id, "pendente")}
+                                                                    style={{
+                                                                        padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                        background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", cursor: "pointer",
+                                                                        transition: "background 0.2s",
+                                                                    }}
+                                                                >
+                                                                    ⏪ Voltar Pendente
+                                                                </button>
+                                                            </>
                                                         )}
                                                         {col.key === "concluido" && (
-                                                            <button
-                                                                onClick={() => updateServiceStatus(service.id, "em_andamento")}
-                                                                style={{
-                                                                    padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                                                                    background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", cursor: "pointer",
-                                                                    transition: "background 0.2s",
-                                                                }}
-                                                            >
-                                                                ↩ Reabrir
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => updateServiceStatus(service.id, "em_andamento")}
+                                                                    style={{
+                                                                        padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                        background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", cursor: "pointer",
+                                                                        transition: "background 0.2s",
+                                                                    }}
+                                                                >
+                                                                    ↩ Reabrir
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => updateServiceStatus(service.id, "pendente")}
+                                                                    style={{
+                                                                        padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                                                                        background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", cursor: "pointer",
+                                                                        transition: "background 0.2s",
+                                                                    }}
+                                                                >
+                                                                    ⏪ Voltar Pendente
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
