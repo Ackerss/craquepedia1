@@ -55,17 +55,17 @@ export default function PortfolioPublicPage() {
         );
     }
 
-    if (!portfolio || !athlete) {
+    if (!portfolio || !athlete || Object.keys(portfolio).length === 0 || !portfolio.hero) {
         return (
             <div style={{ minHeight: "100vh", background: "#020617", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#f8fafc" }}>
                 <Activity size={48} color="#475569" style={{ marginBottom: 16 }} />
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Portfólio Indisponível</h1>
-                <p style={{ color: "#94a3b8" }}>Este atleta ainda não possui um portfólio digital publicado.</p>
+                <p style={{ color: "#94a3b8" }}>Este atleta ainda não possui um portfólio digital publicado ou os dados estão vazios.</p>
             </div>
         );
     }
 
-    const { hero, attributes, history, gallery, videos } = portfolio;
+    const { hero, attributes = [], history = [], gallery = [], videos = [] } = portfolio;
 
     return (
         <div style={{
@@ -194,9 +194,9 @@ export default function PortfolioPublicPage() {
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
                             {videos.map(vid => {
                                 // Simple YouTube embed extraction
-                                let embedUrl = vid.url;
-                                if (vid.url.includes("youtube.com/watch?v=")) embedUrl = vid.url.replace("watch?v=", "embed/");
-                                else if (vid.url.includes("youtu.be/")) embedUrl = vid.url.replace("youtu.be/", "youtube.com/embed/");
+                                let embedUrl = vid.url || "";
+                                if (embedUrl.includes("youtube.com/watch?v=")) embedUrl = embedUrl.replace("watch?v=", "embed/");
+                                else if (embedUrl.includes("youtu.be/")) embedUrl = embedUrl.replace("youtu.be/", "youtube.com/embed/");
 
                                 return (
                                     <div key={vid.id} style={{
@@ -277,7 +277,7 @@ export default function PortfolioPublicPage() {
                 borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 24px", textAlign: "center", color: "#64748b"
             }}>
                 <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 24 }}>
-                    {(athlete.general_data as any)?.instagram && (
+                    {(athlete.general_data as any)?.instagram && typeof (athlete.general_data as any).instagram === 'string' && (
                         <a href={`https://instagram.com/${(athlete.general_data as any).instagram.replace("@","")}`} target="_blank" rel="noreferrer" style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f8fafc", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background=accentColor} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
                             <Instagram size={20} />
                         </a>
