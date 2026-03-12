@@ -21,6 +21,7 @@ export interface PortfolioData {
     videos: Array<{ id: string; url: string; title: string }>;
     history: Array<{ id: string; year: string; title: string; subtitle: string; description: string }>;
     attributes: Array<{ id: string; label: string; value: string }>;
+    theme?: "default" | "pro-dark";
 }
 
 export default function PortfolioEditorPage() {
@@ -41,6 +42,7 @@ export default function PortfolioEditorPage() {
         videos: [],
         history: [],
         attributes: [],
+        theme: "default",
     });
 
     useEffect(() => {
@@ -113,6 +115,7 @@ export default function PortfolioEditorPage() {
             videos: gd.links_video ? [{ id: "gen-vid-1", url: gd.links_video, title: "Vídeo Destacado" }] : [],
             history: historyItems,
             attributes: attrs,
+            theme: "default",
         };
 
         setPortfolioData(newPortfolio);
@@ -148,6 +151,23 @@ export default function PortfolioEditorPage() {
             setService({ ...service, status });
         }
         setSaving(false);
+    };
+
+    const handleGenerateBio = () => {
+        if (!athlete) return;
+        const gd = (athlete.general_data || {}) as Record<string, string>;
+        const sd = (athlete.sport_data || {}) as Record<string, string>;
+        
+        const years = gd.tempo_treino || gd.anos_experiencia ? `mais de ${(gd.tempo_treino || gd.anos_experiencia)} de experiência` : "vasta trajetória";
+        const historyText = gd.conquistas ? "colecionando títulos expressivos e reconhecimento" : "sempre mantendo o foco em resultados reais";
+        
+        const bioText = `${athlete.sport_nickname || athlete.full_name} é um verdadeiro destaque no cenário de ${athlete.sport_name}. Atuando estrategicamente como ${sd.posicao || "atleta profissional"}, possui ${years}, ${historyText}. Este portfólio reflete a dedicação, a excelência técnica e o comprometimento absoluto com a alta performance.`;
+        
+        setPortfolioData(prev => ({
+            ...prev,
+            hero: { ...prev.hero, quote: bioText }
+        }));
+        setIsDirty(true);
     };
 
     if (loading) {
@@ -216,7 +236,11 @@ export default function PortfolioEditorPage() {
                     </button>
                 </div>
             ) : (
-                <PortfolioEditor data={portfolioData} onChange={(newData) => { setPortfolioData(newData); setIsDirty(true); }} />
+                <PortfolioEditor 
+                    data={portfolioData} 
+                    onChange={(newData) => { setPortfolioData(newData); setIsDirty(true); }} 
+                    onGenerateBio={handleGenerateBio}
+                />
             )}
         </div>
     );

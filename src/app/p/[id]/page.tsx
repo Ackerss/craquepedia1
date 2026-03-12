@@ -65,7 +65,8 @@ export default function PortfolioPublicPage() {
         );
     }
 
-    const { hero, attributes = [], history = [], gallery = [], videos = [] } = portfolio;
+    const { hero, attributes = [], history = [], gallery = [], videos = [], theme = "default" } = portfolio;
+    const isPro = theme === "pro-dark";
 
     return (
         <div style={{
@@ -169,12 +170,14 @@ export default function PortfolioPublicPage() {
                         }}>
                             {attributes.map(attr => (
                                 <div key={attr.id} style={{
-                                    background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-                                    borderRadius: 16, padding: 24, transition: "transform 0.3s, background 0.3s",
+                                    background: isPro ? `${accentColor}08` : "rgba(255,255,255,0.02)", 
+                                    border: isPro ? `1px solid ${accentColor}30` : "1px solid rgba(255,255,255,0.05)",
+                                    boxShadow: isPro ? `0 4px 20px ${accentColor}10` : "none",
+                                    borderRadius: 16, padding: 24, transition: "transform 0.3s, background 0.3s, box-shadow 0.3s",
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)" }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.background = "rgba(255,255,255,0.02)" }}>
-                                    <div style={{ fontSize: 12, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 700 }}>{attr.label}</div>
+                                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if(isPro) { e.currentTarget.style.background = `${accentColor}15`; e.currentTarget.style.boxShadow = `0 8px 30px ${accentColor}25`; } else { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; } }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = "none"; if(isPro) { e.currentTarget.style.background = `${accentColor}08`; e.currentTarget.style.boxShadow = `0 4px 20px ${accentColor}10`; } else { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; } }}>
+                                    <div style={{ fontSize: 12, color: isPro ? accentColor : "#94a3b8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 700 }}>{attr.label}</div>
                                     <div style={{ fontSize: 24, fontWeight: 800, color: "#f8fafc" }}>{attr.value}</div>
                                 </div>
                             ))}
@@ -229,7 +232,7 @@ export default function PortfolioPublicPage() {
                             {history.map((item, idx) => (
                                 <div key={item.id} style={{ position: "relative", paddingBottom: idx === history.length - 1 ? 0 : 40 }}>
                                     {/* Bolinha */}
-                                    <div style={{ position: "absolute", left: -31, top: 4, width: 14, height: 14, borderRadius: "50%", background: "#020617", border: `3px solid ${accentColor}` }} />
+                                    <div style={{ position: "absolute", left: -31, top: 4, width: 14, height: 14, borderRadius: "50%", background: isPro ? accentColor : "#020617", border: `3px solid ${accentColor}`, boxShadow: isPro ? `0 0 12px ${accentColor}` : "none", transition: "0.3s" }} />
                                     
                                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                                         <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
@@ -251,16 +254,25 @@ export default function PortfolioPublicPage() {
                 {/* GALERIA */}
                 {gallery && gallery.length > 0 && (
                     <section style={{ marginBottom: 80 }}>
-                        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 32 }}>Galeria</h2>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 16 }}>
+                        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 32 }}>Galeria de Ação</h2>
+                        <style>{`
+                            .portfolio-masonry { column-count: 1; column-gap: 16px; }
+                            @media (min-width: 640px) { .portfolio-masonry { column-count: 2; } }
+                            @media (min-width: 1024px) { .portfolio-masonry { column-count: 3; } }
+                            .portfolio-masonry-item {
+                                break-inside: avoid; margin-bottom: 16px; border-radius: 16px;
+                                overflow: hidden; position: relative;
+                                border: 1px solid rgba(255,255,255,0.05); background: #0f172a;
+                                transition: transform 0.3s, box-shadow 0.3s;
+                            }
+                            .portfolio-masonry-item:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+                        `}</style>
+                        <div className="portfolio-masonry">
                             {gallery.map(img => (
-                                <div key={img.id} style={{
-                                    aspectRatio: "1", borderRadius: 16, overflow: "hidden", background: "#0f172a", position: "relative",
-                                    border: "1px solid rgba(255,255,255,0.05)"
-                                }}>
-                                    <img src={img.url} alt={img.caption || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                <div key={img.id} className="portfolio-masonry-item">
+                                    <img src={img.url} alt={img.caption || "Foto do atleta"} style={{ width: "100%", display: "block", objectFit: "cover" }} />
                                     {img.caption && (
-                                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent, rgba(0,0,0,0.8))", fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "30px 16px 16px", background: "linear-gradient(transparent, rgba(0,0,0,0.9))", fontSize: 13, fontWeight: 600, color: "#fff" }}>
                                             {img.caption}
                                         </div>
                                     )}

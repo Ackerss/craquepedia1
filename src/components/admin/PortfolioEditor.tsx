@@ -1,15 +1,16 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, Image as ImageIcon, Youtube, Activity, Clock, User } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Youtube, Activity, Clock, User, Palette, Sparkles } from "lucide-react";
 import type { PortfolioData } from "../../app/admin/portfolios/[id]/page";
 
 interface PortfolioEditorProps {
     data: PortfolioData;
     onChange: (newData: PortfolioData) => void;
+    onGenerateBio?: () => void;
 }
 
-export default function PortfolioEditor({ data, onChange }: PortfolioEditorProps) {
+export default function PortfolioEditor({ data, onChange, onGenerateBio }: PortfolioEditorProps) {
     const inputStyle: React.CSSProperties = {
         width: "100%", padding: "10px 14px", borderRadius: 8,
         border: "1.5px solid var(--border-color)", fontSize: 13,
@@ -48,6 +49,24 @@ export default function PortfolioEditor({ data, onChange }: PortfolioEditorProps
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* CONFIGURAÇÕES GLOBAIS */}
+            <div style={sectionStyle}>
+                <h3 style={headerStyle}><Palette size={18} color="#7c3aed" /> Configurações de Design</h3>
+                <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ flex: 1, maxWidth: 400 }}>
+                        <label style={labelStyle}>Tema Visual Público</label>
+                        <select 
+                            style={inputStyle} 
+                            value={data.theme || "default"} 
+                            onChange={e => onChange({ ...data, theme: e.target.value as "default" | "pro-dark" })}
+                        >
+                            <option value="default">Padrão (Clean & Objetivo)</option>
+                            <option value="pro-dark">Premium Impacto (Dark / Cards Flutuantes / Estilo Canva)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             {/* HERÓI / CABEÇALHO */}
             <div style={sectionStyle}>
                 <h3 style={headerStyle}><User size={18} color="var(--primary-color)" /> Bloco Principal (Hero)</h3>
@@ -68,9 +87,19 @@ export default function PortfolioEditor({ data, onChange }: PortfolioEditorProps
                         <label style={labelStyle}>URL Imagem de Fundo (Cover)</label>
                         <input style={inputStyle} value={data.hero.coverUrl} onChange={e => updateHero("coverUrl", e.target.value)} placeholder="https://..." />
                     </div>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={labelStyle}>Frase de Efeito / Resumo (Quote)</label>
-                        <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={data.hero.quote} onChange={e => updateHero("quote", e.target.value)} />
+                    <div style={{ gridColumn: "1 / -1", position: "relative" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6 }}>
+                            <label style={{ ...labelStyle, marginBottom: 0 }}>Frase de Efeito / Biografia (Quote)</label>
+                            {onGenerateBio && (
+                                <button 
+                                    onClick={onGenerateBio} 
+                                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg, #7c3aed, #ec4899)", color: "#fff", border: "none", cursor: "pointer" }}
+                                >
+                                    <Sparkles size={12} /> Sintetizar Biografia de Impacto
+                                </button>
+                            )}
+                        </div>
+                        <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} value={data.hero.quote} onChange={e => updateHero("quote", e.target.value)} placeholder="Resumo e introdução detalhada da história do atleta..." />
                     </div>
                 </div>
             </div>
