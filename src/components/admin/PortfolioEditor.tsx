@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, Image as ImageIcon, Youtube, Activity, Clock, User, Palette, Sparkles } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Youtube, Activity, Clock, User, Palette, Sparkles, Trophy, Contact, FileText } from "lucide-react";
 import type { PortfolioData } from "../../app/admin/portfolios/[id]/page";
 
 interface PortfolioEditorProps {
@@ -32,19 +32,24 @@ export default function PortfolioEditor({ data, onChange, onGenerateBio }: Portf
     };
 
     const updateArray = <K extends keyof PortfolioData>(field: K, index: number, itemField: string, value: string) => {
-        const newArr = [...(data[field] as any[])];
+        const newArr = [...(data[field] as Record<string, unknown>[])];
         newArr[index] = { ...newArr[index], [itemField]: value };
         onChange({ ...data, [field]: newArr });
     };
 
     const removeFromArray = (field: keyof PortfolioData, index: number) => {
-        const newArr = [...(data[field] as any[])];
+        const newArr = [...(data[field] as Record<string, unknown>[])];
         newArr.splice(index, 1);
         onChange({ ...data, [field]: newArr });
     };
 
-    const addToArray = (field: keyof PortfolioData, newItem: any) => {
-        onChange({ ...data, [field]: [...(data[field] as any[]), newItem] });
+    const addToArray = (field: keyof PortfolioData, newItem: Record<string, unknown>) => {
+        onChange({ ...data, [field]: [...((data[field] as Record<string, unknown>[]) || []), newItem] });
+    };
+
+    const updateContacts = (field: keyof NonNullable<PortfolioData["contacts"]>, value: string) => {
+        const currentContacts = data.contacts || { instagram: "", youtube: "", phone: "", email: "" };
+        onChange({ ...data, contacts: { ...currentContacts, [field]: value } });
     };
 
     return (
@@ -100,6 +105,72 @@ export default function PortfolioEditor({ data, onChange, onGenerateBio }: Portf
                             )}
                         </div>
                         <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} value={data.hero.quote} onChange={e => updateHero("quote", e.target.value)} placeholder="Resumo e introdução detalhada da história do atleta..." />
+                    </div>
+                </div>
+            </div>
+
+            {/* RESUMO PROFISSIONAL */}
+            <div style={sectionStyle}>
+                <h3 style={headerStyle}><FileText size={18} color="#0ea5e9" /> Resumo Profissional</h3>
+                <textarea 
+                    style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} 
+                    value={data.professional_summary || ""} 
+                    onChange={e => onChange({ ...data, professional_summary: e.target.value })} 
+                    placeholder="Bio completa e profissional do atleta..." 
+                />
+            </div>
+
+            {/* CONQUISTAS E TÍTULOS */}
+            <div style={sectionStyle}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+                    <h3 style={{ ...headerStyle, marginBottom: 0 }}><Trophy size={18} color="#f59e0b" /> Conquistas e Títulos</h3>
+                    <button onClick={() => addToArray("achievements", { id: Date.now().toString(), year: "", title: "", description: "" })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: "rgba(37,99,235,0.1)", color: "#2563eb", border: "none", cursor: "pointer" }}>
+                        <Plus size={14} /> Adicionar
+                    </button>
+                </div>
+                {(!data.achievements || data.achievements.length === 0) && <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>Nenhuma conquista adicionada.</p>}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {(data.achievements || []).map((ach, idx) => (
+                        <div key={ach.id} style={{ display: "flex", gap: 16, background: "#f8fafc", padding: 16, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                            <div style={{ width: 80 }}>
+                                <label style={labelStyle}>Ano</label>
+                                <input style={inputStyle} value={ach.year} onChange={e => updateArray("achievements", idx, "year", e.target.value)} placeholder="2024" />
+                            </div>
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                                <div>
+                                    <label style={labelStyle}>Título da Conquista</label>
+                                    <input style={inputStyle} value={ach.title} onChange={e => updateArray("achievements", idx, "title", e.target.value)} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Detalhes</label>
+                                    <textarea style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} value={ach.description || ""} onChange={e => updateArray("achievements", idx, "description", e.target.value)} />
+                                </div>
+                            </div>
+                            <button onClick={() => removeFromArray("achievements", idx)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", height: "fit-content", marginTop: 24 }}><Trash2 size={18} /></button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* CONTATOS */}
+            <div style={sectionStyle}>
+                <h3 style={headerStyle}><Contact size={18} color="#10b981" /> Contatos e Redes</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px" }}>
+                    <div>
+                        <label style={labelStyle}>Instagram (Arroba ou Link)</label>
+                        <input style={inputStyle} value={data.contacts?.instagram || ""} onChange={e => updateContacts("instagram", e.target.value)} placeholder="@atleta" />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>YouTube (Canal ou Vídeo Principal)</label>
+                        <input style={inputStyle} value={data.contacts?.youtube || ""} onChange={e => updateContacts("youtube", e.target.value)} placeholder="https://youtube.com/..." />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Telefone / WhatsApp</label>
+                        <input style={inputStyle} value={data.contacts?.phone || ""} onChange={e => updateContacts("phone", e.target.value)} />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>E-mail de Contato</label>
+                        <input style={inputStyle} value={data.contacts?.email || ""} onChange={e => updateContacts("email", e.target.value)} />
                     </div>
                 </div>
             </div>

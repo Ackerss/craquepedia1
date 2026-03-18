@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Filter, Loader2, Eye, ClipboardList, Trash2, AlertTriangle, X } from "lucide-react";
+import { Search, Filter, Loader2, Eye, ClipboardList, Trash2, AlertTriangle, X, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { STATUS_LABELS, type Submission } from "@/lib/supabase/types";
 
@@ -127,6 +127,12 @@ export default function CadastrosPage() {
                         style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid var(--border-color)", fontSize: 13, fontFamily: "inherit" }}
                     >
                         <option value="todos">Todos os Status</option>
+                        <option value="recebido">Recebido</option>
+                        <option value="aguardando_analise_ia">Aguardando IA</option>
+                        <option value="analisado_ia">Análise Concluída</option>
+                        <option value="pronto_para_revisao">Pronto p/ Revisão</option>
+                        <option value="incompleto">Incompleto</option>
+                        <option value="aguardando_atleta">Aguardando Atleta</option>
                         <option value="pendente">Pendente</option>
                         <option value="em_revisao">Em Revisão</option>
                         <option value="aprovado">Aprovado</option>
@@ -159,6 +165,16 @@ export default function CadastrosPage() {
                     <tbody>
                         {filtered.map((sub) => {
                             const statusInfo = STATUS_LABELS[sub.status] || STATUS_LABELS.pendente;
+                            
+                            const aiReviewStatus = sub.ai_review_status || 'pendente';
+                            const aiStatusColors: Record<string, { bg: string, color: string, label: string, icon: any }> = {
+                                'pendente': { bg: '#f1f5f9', color: '#64748b', label: 'IA Não Iniciada', icon: Sparkles },
+                                'sucesso': { bg: '#dcfce7', color: '#16a34a', label: 'IA Analisou', icon: CheckCircle },
+                                'erro': { bg: '#fee2e2', color: '#ef4444', label: 'Erro na IA', icon: XCircle }
+                            };
+                            const currentAiVisual = aiStatusColors[aiReviewStatus] || aiStatusColors['pendente'];
+                            const AiIcon = currentAiVisual.icon;
+
                             return (
                                 <tr key={sub.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
                                     <td style={{ padding: "14px 20px" }}>
@@ -183,12 +199,15 @@ export default function CadastrosPage() {
                                     <td style={{ padding: "14px 16px", fontSize: 12, color: "var(--text-secondary)" }}>
                                         {new Date(sub.created_at).toLocaleDateString("pt-BR")}
                                     </td>
-                                    <td style={{ padding: "14px 16px" }}>
+                                    <td style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
                                         <span style={{
                                             padding: "4px 12px", borderRadius: 6, fontSize: 11,
                                             fontWeight: 600, background: statusInfo.bg, color: statusInfo.color,
                                         }}>
                                             {statusInfo.label}
+                                        </span>
+                                        <span style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, background: currentAiVisual.bg, color: currentAiVisual.color }}>
+                                            <AiIcon size={12} /> {currentAiVisual.label}
                                         </span>
                                     </td>
                                     <td style={{ padding: "14px 16px", textAlign: "center" }}>

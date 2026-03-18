@@ -1,23 +1,29 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
     ArrowLeft, Loader2, CheckCircle, XCircle, AlertTriangle,
-    Edit, MessageSquare, User, Phone, MapPin,
-    Instagram, FileText, Activity, Save
+    Edit, MessageSquare, User, Phone,
+    Instagram, Activity, Save, Sparkles, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { STATUS_LABELS, type Submission } from "@/lib/supabase/types";
 
+interface SportField {
+    key: string;
+    label: string;
+    type: string;
+    options?: string[];
+}
+
 export default function RevisaoCadastroPage() {
     const params = useParams();
-    const router = useRouter();
     const id = params.id as string;
 
     const [submission, setSubmission] = useState<Submission | null>(null);
-    const [sportSchema, setSportSchema] = useState<any[]>([]);
+    const [sportSchema, setSportSchema] = useState<SportField[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editMode, setEditMode] = useState(false);
@@ -33,14 +39,18 @@ export default function RevisaoCadastroPage() {
                 .single();
 
             if (subData && !subErr) {
-                setSubmission(subData);
-                setNotes(subData.admin_notes || "");
-                // Ensure nested objects exist to avoid undefined errors during edit
-                setEditData({
+                // Mesclar as edições salvas (se existirem) no estado visual para o Admin ver suas alterações
+                const metadata = (subData.approval_metadata as Record<string, unknown>) || {};
+                const mergedSubData = {
                     ...subData,
-                    general_data: subData.general_data || {},
-                    sport_data: subData.sport_data || {}
-                });
+                    ...metadata, // Sobrepõe dados base visualmente
+                    general_data: metadata.general_data || subData.general_data || {},
+                    sport_data: metadata.sport_data || subData.sport_data || {}
+                } as Submission;
+
+                setSubmission(mergedSubData);
+                setNotes(subData.admin_notes || "");
+                setEditData(mergedSubData);
 
                 const { data: sportData } = await supabase
                     .from("sports")
@@ -70,33 +80,70 @@ export default function RevisaoCadastroPage() {
 
         if (!error) {
             if (newStatus === "aprovado" && submission) {
-                const { data: newAthlete } = await supabase.from("athletes").insert({
-                    submission_id: submission.id,
-                    sport_id: submission.sport_id,
-                    sport_name: submission.sport_name,
-                    full_name: submission.full_name,
-                    sport_nickname: submission.sport_nickname,
-                    email: submission.email,
-                    phone: submission.phone,
-                    birth_date: submission.birth_date,
-                    city: submission.city,
-                    state: submission.state,
-                    general_data: submission.general_data,
-                    sport_data: submission.sport_data,
-                    photo_url: (submission as unknown as Record<string, unknown>).photo_url as string || null,
-                    status: "ativo",
-                }).select("id").single();
+                const finalGeneralData = { ...(submission.general_data as Record<string, unknown>) };
+                // Injetar IA se os campos originais estiverem vazios
+                if (submission.ai_suggested_bio && !finalGeneralData.bio) {
+                    finalGeneralData.bio = submission.ai_suggested_bio;
+                }
+                if (submission.ai_suggested_achievements && !finalGeneralData.conquistas) {
+                    finalGeneralData.conquistas = submission.ai_suggested_achievements;
+                }
 
-                // Criar registros de serviço para o novo atleta
-                if (newAthlete) {
-                    const serviceTypes = ["formulario", "curriculo", "portfolio", "cartao", "video", "youtube"];
-                    await supabase.from("athlete_services").insert(
-                        serviceTypes.map((type) => ({
-                            athlete_id: newAthlete.id,
-                            service_type: type,
-                            status: type === "formulario" ? "concluido" : "pendente",
-                        }))
-                    );
+                // Verificar duplicidade de atleta por email
+                const { data: existingAthlete } = await supabase
+                    .from("athletes")
+                    .select("id")
+                    .eq("email", submission.email)
+                    .single();
+
+                let newAthleteId = existingAthlete?.id;
+
+                if (existingAthlete) {
+                    // Update existente
+                    await supabase.from("athletes").update({
+                        sport_id: submission.sport_id,
+                        sport_name: submission.sport_name,
+                        full_name: submission.full_name,
+                        sport_nickname: submission.sport_nickname,
+                        phone: submission.phone,
+                        birth_date: submission.birth_date,
+                        city: submission.city,
+                        state: submission.state,
+                        general_data: finalGeneralData,
+                        sport_data: submission.sport_data,
+                        updated_at: new Date().toISOString()
+                    }).eq("id", existingAthlete.id);
+                } else {
+                    // Insere novo
+                    const { data: newAthlete } = await supabase.from("athletes").insert({
+                        submission_id: submission.id,
+                        sport_id: submission.sport_id,
+                        sport_name: submission.sport_name,
+                        full_name: submission.full_name,
+                        sport_nickname: submission.sport_nickname,
+                        email: submission.email,
+                        phone: submission.phone,
+                        birth_date: submission.birth_date,
+                        city: submission.city,
+                        state: submission.state,
+                        general_data: finalGeneralData,
+                        sport_data: submission.sport_data,
+                        photo_url: (submission as unknown as Record<string, unknown>).photo_url as string || null,
+                        status: "ativo",
+                    }).select("id").single();
+                    newAthleteId = newAthlete?.id;
+
+                    // Criar registros de serviço para o novo atleta
+                    if (newAthleteId) {
+                        const serviceTypes = ["formulario", "curriculo", "portfolio", "cartao", "video", "youtube"];
+                        await supabase.from("athlete_services").insert(
+                            serviceTypes.map((type) => ({
+                                athlete_id: newAthleteId,
+                                service_type: type,
+                                status: type === "formulario" ? "concluido" : "pendente",
+                            }))
+                        );
+                    }
                 }
             }
             setSubmission({ ...submission!, status: newStatus as Submission["status"], admin_notes: notes });
@@ -106,25 +153,29 @@ export default function RevisaoCadastroPage() {
 
     const saveEdits = async () => {
         setSaving(true);
+        const metadataPayload = {
+            full_name: editData.full_name,
+            sport_nickname: editData.sport_nickname,
+            email: editData.email,
+            phone: editData.phone,
+            birth_date: editData.birth_date,
+            city: editData.city,
+            state: editData.state,
+            general_data: editData.general_data,
+            sport_data: editData.sport_data,
+        };
+
         const { error } = await supabase
             .from("submissions")
             .update({
-                full_name: editData.full_name,
-                sport_nickname: editData.sport_nickname,
-                email: editData.email,
-                phone: editData.phone,
-                birth_date: editData.birth_date,
-                city: editData.city,
-                state: editData.state,
-                general_data: editData.general_data,
-                sport_data: editData.sport_data,
+                approval_metadata: metadataPayload, // Salva na coluna blindada 
                 admin_notes: notes,
                 updated_at: new Date().toISOString(),
             })
             .eq("id", id);
 
         if (!error) {
-            setSubmission({ ...submission!, ...editData, admin_notes: notes });
+            setSubmission({ ...submission!, ...metadataPayload, admin_notes: notes } as Submission);
             setEditMode(false);
         } else {
             alert("Erro ao salvar as edições");
@@ -151,6 +202,18 @@ export default function RevisaoCadastroPage() {
     }
 
     const statusInfo = STATUS_LABELS[submission.status] || STATUS_LABELS.pendente;
+    const aiReviewStatus = submission.ai_review_status || 'pendente';
+    const missedFields = submission.missing_fields || [];
+    
+    // Configurações visuais do Status da IA
+    const aiStatusColors: Record<string, { bg: string, color: string, label: string, icon: React.ElementType }> = {
+        'pendente': { bg: '#f1f5f9', color: '#64748b', label: 'IA Não Iniciada', icon: Sparkles },
+        'sucesso': { bg: '#dcfce7', color: '#16a34a', label: 'IA Analisou', icon: CheckCircle },
+        'erro': { bg: '#fee2e2', color: '#ef4444', label: 'Erro na IA', icon: XCircle }
+    };
+    const currentAiVisual = aiStatusColors[aiReviewStatus] || aiStatusColors['pendente'];
+    const AiIcon = currentAiVisual.icon;
+
     const generalData = (submission.general_data || {}) as Record<string, string>;
     const sportData = (submission.sport_data || {}) as Record<string, unknown>;
     const photoUrl = (submission as unknown as Record<string, unknown>).photo_url as string | null;
@@ -193,7 +256,7 @@ export default function RevisaoCadastroPage() {
 
     const renderGeneralField = (label: string, key: string, isTextarea = false) => {
         const value = generalData[key];
-        const editValue = (editData.general_data as any)?.[key] || "";
+        const editValue = (editData.general_data as Record<string, unknown>)?.[key] as string || "";
 
         return (
             <div style={{ marginBottom: 16 }}>
@@ -203,13 +266,13 @@ export default function RevisaoCadastroPage() {
                         <textarea
                             style={{ ...inputStyle, borderColor: "var(--primary-color)", minHeight: 80, resize: "vertical" }}
                             value={editValue}
-                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as any), [key]: e.target.value } })}
+                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as Record<string, unknown>), [key]: e.target.value } })}
                         />
                     ) : (
                         <input
                             style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
                             value={editValue}
-                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as any), [key]: e.target.value } })}
+                            onChange={(e) => setEditData({ ...editData, general_data: { ...(editData.general_data as Record<string, unknown>), [key]: e.target.value } })}
                         />
                     )
                 ) : (
@@ -244,7 +307,10 @@ export default function RevisaoCadastroPage() {
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                 <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{submission.sport_name}</span>
                                 <span style={{ padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: statusInfo.bg, color: statusInfo.color }}>
-                                    {statusInfo.label}
+                                    Status Geral: {statusInfo.label}
+                                </span>
+                                <span style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: currentAiVisual.bg, color: currentAiVisual.color }}>
+                                    <AiIcon size={14} /> {currentAiVisual.label}
                                 </span>
                                 <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                                     Recebido em {new Date(submission.created_at).toLocaleDateString("pt-BR")}
@@ -305,6 +371,33 @@ export default function RevisaoCadastroPage() {
                         )}
                     </div>
 
+                    {/* Sugestões da IA (Bio e Conquistas) */}
+                    {(submission.ai_suggested_bio || submission.ai_suggested_achievements) && (
+                        <div style={{ background: "#f8fafc", borderRadius: 16, border: "1px solid #cbd5e1", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16, color: "#334155" }}>
+                                <span style={{ background: "#e2e8f0", padding: 6, borderRadius: 8 }}><Sparkles size={18} color="#475569" /></span> Sugestões da IA (Prontas para Revisão)
+                            </h3>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                {submission.ai_suggested_bio && (
+                                    <div>
+                                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Biografia Sugerida</label>
+                                        <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", whiteSpace: "pre-wrap", background: "#fff", padding: "12px 16px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                                            {submission.ai_suggested_bio}
+                                        </p>
+                                    </div>
+                                )}
+                                {submission.ai_suggested_achievements && (
+                                    <div>
+                                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Conquistas Reestruturadas</label>
+                                        <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", whiteSpace: "pre-wrap", background: "#fff", padding: "12px 16px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                                            {submission.ai_suggested_achievements}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Redes sociais */}
                     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
                         <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16 }}>
@@ -337,24 +430,24 @@ export default function RevisaoCadastroPage() {
                                         field.type === 'textarea' ? (
                                             <textarea
                                                 style={{ ...inputStyle, borderColor: "var(--primary-color)", minHeight: 80, resize: "vertical" }}
-                                                value={String((editData.sport_data as any)?.[field.key] || "")}
-                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
+                                                value={String((editData.sport_data as Record<string, unknown>)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as Record<string, unknown>), [field.key]: e.target.value } })}
                                             />
                                         ) : field.type === 'select' || field.type === 'select_multi' ? (
                                             /* Para simplificar edição de múltipla escolha ou seletor, mantemos ou transformamos em select ou texto com vírgula (já que salvamos assim antes)
                                                Como os dados vem como string "Opt1, Opt2", vamos usar input de texto para edições complexas de arrays por agora ou manter string simples */
                                             <input
                                                 style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
-                                                value={String((editData.sport_data as any)?.[field.key] || "")}
-                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: e.target.value } })}
+                                                value={String((editData.sport_data as Record<string, unknown>)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as Record<string, unknown>), [field.key]: e.target.value } })}
                                                 placeholder={field.type === 'select_multi' ? "Separe valores com vírgula" : "Digite a seleção"}
                                             />
                                         ) : (
                                             <input
                                                 style={{ ...inputStyle, borderColor: "var(--primary-color)" }}
                                                 type={field.type === "number" ? "number" : "text"}
-                                                value={String((editData.sport_data as any)?.[field.key] || "")}
-                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as any), [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value } })}
+                                                value={String((editData.sport_data as Record<string, unknown>)?.[field.key] || "")}
+                                                onChange={(e) => setEditData({ ...editData, sport_data: { ...(editData.sport_data as Record<string, unknown>), [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value } })}
                                             />
                                         )
                                     ) : (
@@ -379,6 +472,23 @@ export default function RevisaoCadastroPage() {
 
                 {/* Sidebar Actions */}
                 <div>
+                     {/* Alerta de Campos Faltantes (IA) */}
+                     {missedFields.length > 0 && (
+                        <div style={{ background: "#fffaf0", borderRadius: 16, border: "1px solid #fed7aa", padding: 20, marginBottom: 20, boxShadow: "0 4px 12px rgba(249, 115, 22, 0.05)" }}>
+                            <h3 style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                <AlertCircle size={18} /> Dados Ausentes (Aviso IA)
+                            </h3>
+                            <p style={{ fontSize: 13, color: "#9a3412", lineHeight: 1.5, marginBottom: 16 }}>
+                                A Inteligência Artificial detectou que os seguintes campos fundamentais vieram em branco ou incompletos no cadastro original:
+                            </p>
+                            <ul style={{ margin: 0, paddingLeft: 20, color: "#c2410c", fontSize: 13, fontWeight: 600, display: "flex", flexDirection: "column", gap: 6 }}>
+                                {missedFields.map((field, idx) => (
+                                    <li key={idx} style={{ textTransform: "capitalize" }}>{field.replace(/_/g, " ")}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* Ações */}
                     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
                         <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 16 }}>Ações de Revisão</h3>
@@ -402,6 +512,16 @@ export default function RevisaoCadastroPage() {
                                 }}
                             >
                                 <Activity size={18} /> Em Análise Interna
+                            </button>
+                            <button
+                                onClick={() => updateStatus("aguardando_atleta")}
+                                disabled={saving}
+                                style={{
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "1.5px solid rgba(236, 72, 153, 0.3)", cursor: "pointer",
+                                    background: "rgba(236, 72, 153, 0.08)", color: "#ec4899", width: "100%", justifyContent: "center", transition: "all 0.2s"
+                                }}
+                            >
+                                <AlertTriangle size={18} /> Aguardando Atleta
                             </button>
                             <button
                                 onClick={() => updateStatus("complementar")}
@@ -432,6 +552,41 @@ export default function RevisaoCadastroPage() {
                                     💬 WhatsApp do Atleta
                                 </a>
                             )}
+                            
+                            <hr style={{ border: "0", borderTop: "1px solid var(--border-color)", margin: "8px 0" }} />
+                            
+                            <button
+                                onClick={async () => {
+                                    if(confirm("Iniciar a análise de inteligência artificial custa tokens. Deseja prosseguir?")) {
+                                        setSaving(true);
+                                        try {
+                                            const res = await fetch("/api/analyze-submission", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ submissionId: id })
+                                            });
+                                            const result = await res.json();
+                                            if (!res.ok) {
+                                                alert(result.error || "Erro na análise IA");
+                                            } else {
+                                                alert("Análise concluída com sucesso! Recarregando...");
+                                                window.location.reload();
+                                            }
+                                        } catch (e) {
+                                            alert("Falha de conexão com a IA.");
+                                        }
+                                        setSaving(false);
+                                    }
+                                }}
+                                disabled={saving}
+                                style={{
+                                    display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: saving ? "not-allowed" : "pointer",
+                                    background: "#0ea5e9", color: "#fff", width: "100%", justifyContent: "center", transition: "all 0.2s"
+                                }}
+                            >
+                                {saving ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                                {saving ? "Processando IA..." : "Iniciar Análise IA"}
+                            </button>
                         </div>
                     </div>
 

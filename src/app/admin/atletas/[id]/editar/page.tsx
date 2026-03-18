@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Trash2, Camera } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2, Camera, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import type { Athlete, Sport, SportField } from "@/lib/supabase/types";
 
@@ -167,6 +167,18 @@ export default function EditarAtletaPage() {
                     </button>
                 </div>
             </div>
+
+            {athlete.submission_id && (
+                <div style={{ padding: "12px 16px", background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, marginBottom: 24, display: "flex", gap: 16, alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#0f172a", fontSize: 13, fontWeight: 500 }}>
+                        <span style={{ color: "#10b981", fontSize: 16 }}>✅</span> Perfil Mestre Aprovado
+                    </div>
+                    <div style={{ width: 1, height: 16, background: "rgba(0,0,0,0.1)" }} />
+                    <Link href={`/admin/cadastros/${athlete.submission_id}`} target="_blank" style={{ fontSize: 13, color: "var(--primary-color)", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Eye size={14} /> Ver Cadastro Original
+                    </Link>
+                </div>
+            )}
 
             {/* Dados pessoais */}
             <div style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border-color)", padding: 24, marginBottom: 20 }}>

@@ -17,6 +17,14 @@ export interface PortfolioData {
         quote: string;
         club: string;
     };
+    professional_summary?: string;
+    achievements?: Array<{ id: string; year: string; title: string; description?: string }>;
+    contacts?: {
+        instagram?: string;
+        youtube?: string;
+        phone?: string;
+        email?: string;
+    };
     gallery: Array<{ id: string; url: string; caption: string }>;
     videos: Array<{ id: string; url: string; title: string }>;
     history: Array<{ id: string; year: string; title: string; subtitle: string; description: string }>;
@@ -38,6 +46,9 @@ export default function PortfolioEditorPage() {
 
     const [portfolioData, setPortfolioData] = useState<PortfolioData>({
         hero: { avatarUrl: "", coverUrl: "", title: "", subtitle: "", quote: "", club: "" },
+        professional_summary: "",
+        achievements: [],
+        contacts: { instagram: "", youtube: "", phone: "", email: "" },
         gallery: [],
         videos: [],
         history: [],
@@ -88,12 +99,20 @@ export default function PortfolioEditorPage() {
         };
 
         const conquistasList = parseList(gd.conquistas || "");
-        const historyItems = conquistasList.map((c, i) => ({
-            id: `gen-hist-${i}`,
+        const achievementsItems = conquistasList.map((c, i) => ({
+            id: `gen-ach-${i}`,
             year: c.match(/^(\d{4})/) ? c.substring(0,4) : "",
-            title: c.replace(/^(\d{4})[\s-:]*/, "").substring(0, 40) + "...",
-            subtitle: "",
+            title: c.replace(/^(\d{4})[\s-:]*/, "").substring(0, 40) + (c.length > 40 ? "..." : ""),
             description: c
+        }));
+
+        const historicosList = parseList(gd.historico || "");
+        const historyItems = historicosList.map((h, i) => ({
+            id: `gen-hist-${i}`,
+            year: h.match(/^(\d{4})/) ? h.substring(0,4) : "",
+            title: h.replace(/^(\d{4})[\s-:]*/, "").split(' - ')[0] || "Clube/Time",
+            subtitle: h.split(' - ')[1] || "",
+            description: h
         }));
 
         const attrs = Object.entries(sd).filter(([k,v]) => v && k !== "posicao").map(([k,v], i) => ({
@@ -110,6 +129,14 @@ export default function PortfolioEditorPage() {
                 subtitle: `${athlete.sport_name}${sd.posicao ? ` • ${sd.posicao}` : ""}`,
                 quote: gd.bio?.substring(0, 150) || "",
                 club: athlete.city || "", // Or any club field if it exists
+            },
+            professional_summary: gd.bio || "",
+            achievements: achievementsItems,
+            contacts: {
+                instagram: gd.instagram || "",
+                youtube: gd.youtube || "",
+                phone: athlete.phone || "",
+                email: athlete.email || ""
             },
             gallery: athlete.photo_url ? [{ id: "gen-img-1", url: athlete.photo_url, caption: "Foto de Perfil" }] : [],
             videos: gd.links_video ? [{ id: "gen-vid-1", url: gd.links_video, title: "Vídeo Destacado" }] : [],

@@ -21,7 +21,7 @@ export interface Submission {
     id: string;
     sport_id: string;
     sport_name: string;
-    status: 'pendente' | 'em_revisao' | 'aprovado' | 'rejeitado' | 'complementar';
+    status: 'recebido' | 'aguardando_analise_ia' | 'analisado_ia' | 'pronto_para_revisao' | 'incompleto' | 'aguardando_atleta' | 'aprovado' | 'rejeitado' | 'pendente' | 'em_revisao' | 'complementar';
     full_name: string;
     sport_nickname?: string;
     email?: string;
@@ -32,6 +32,14 @@ export interface Submission {
     general_data: Record<string, unknown>;
     sport_data: Record<string, unknown>;
     admin_notes?: string;
+    ai_review_status?: string;
+    missing_fields?: string[];
+    ai_suggested_bio?: string;
+    ai_suggested_achievements?: string;
+    ai_suggested_general_data?: Record<string, unknown>;
+    ai_suggested_sport_data?: Record<string, unknown>;
+    ai_score?: number;
+    approval_metadata?: Record<string, unknown>;
     created_at: string;
     updated_at: string;
     reviewed_by?: string;
@@ -115,6 +123,12 @@ export const SERVICE_STATUS_LABELS: Record<ServiceStatus, { label: string; color
 
 // Status labels para exibição (submissions e athletes)
 export const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+    recebido: { label: 'Recebido', color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)' },
+    aguardando_analise_ia: { label: 'Aguardando IA', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+    analisado_ia: { label: 'Análise Concluída', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)' },
+    pronto_para_revisao: { label: 'Pronto p/ Revisão', color: '#eab308', bg: 'rgba(234, 179, 8, 0.1)' },
+    incompleto: { label: 'Incompleto', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
+    aguardando_atleta: { label: 'Aguardando Atleta', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
     pendente: { label: 'Pendente', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
     em_revisao: { label: 'Em Revisão', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
     aprovado: { label: 'Aprovado', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },

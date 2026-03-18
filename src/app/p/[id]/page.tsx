@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Play, Trophy, MapPin, Instagram, Youtube, User, Globe, Activity } from "lucide-react";
+import { Loader2, Play, Trophy, MapPin, Instagram, Youtube, User, Activity, FileText, Phone, Mail, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { type Athlete, type AthleteService } from "@/lib/supabase/types";
+import { type Athlete } from "@/lib/supabase/types";
 import type { PortfolioData } from "../../admin/portfolios/[id]/page";
 import Link from "next/link";
 
@@ -65,7 +65,7 @@ export default function PortfolioPublicPage() {
         );
     }
 
-    const { hero, attributes = [], history = [], gallery = [], videos = [], theme = "default" } = portfolio;
+    const { hero, attributes = [], history = [], gallery = [], videos = [], theme = "default", professional_summary, achievements = [], contacts } = portfolio;
     const isPro = theme === "pro-dark";
 
     return (
@@ -150,12 +150,62 @@ export default function PortfolioPublicPage() {
                             "{hero.quote}"
                         </p>
                     )}
+
+                    {/* REDES SOCIAIS E CONTATOS (HERO) */}
+                    {contacts && (contacts.phone || contacts.email || contacts.instagram || contacts.youtube) && (
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginTop: 32 }}>
+                            {contacts.phone && (() => {
+                                const digits = contacts.phone.replace(/\D/g, "");
+                                const whatsNum = digits.startsWith("55") ? digits : (digits.length >= 10 ? "55" + digits : digits);
+                                return (
+                                    <a href={`https://wa.me/${whatsNum}`} target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer", padding: "10px 20px", borderRadius: 30, background: "#25D366", color: "#fff", fontWeight: 800, fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 8, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
+                                        <Phone size={16} /> Falar no WhatsApp
+                                    </a>
+                                );
+                            })()}
+                            {contacts.email && (
+                                <a href={`mailto:${contacts.email}`} style={{ cursor: "pointer", padding: "10px 20px", borderRadius: 30, background: "rgba(255,255,255,0.05)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 8, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}>
+                                    <Mail size={16} /> E-mail
+                                </a>
+                            )}
+                            {contacts.instagram && (
+                                <a href={`https://instagram.com/${contacts.instagram.replace("@","")}`} target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer", padding: "10px 20px", borderRadius: 30, background: "rgba(255,255,255,0.05)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 8, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}>
+                                    <Instagram size={16} /> Instagram
+                                </a>
+                            )}
+                            {contacts.youtube && (
+                                <a href={contacts.youtube} target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer", padding: "10px 20px", borderRadius: 30, background: "rgba(255,255,255,0.05)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 8, transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}>
+                                    <Youtube size={16} /> Vídeos
+                                </a>
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 
             {/* CONTEÚDO */}
             <main style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
                 
+                {/* RESUMO PROFISSIONAL */}
+                {professional_summary && (
+                    <section style={{ marginBottom: 80, maxWidth: 900, margin: "0 auto 80px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, justifyContent: "center" }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", color: accentColor }}>
+                                <FileText size={20} />
+                            </div>
+                            <h2 style={{ fontSize: 24, fontWeight: 800 }}>Perfil do Atleta</h2>
+                        </div>
+                        <p style={{
+                            fontSize: "clamp(16px, 2vw, 18px)", color: "#e2e8f0",
+                            lineHeight: 1.8, textAlign: "justify", whiteSpace: "pre-wrap",
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
+                            padding: 32, borderRadius: 24, border: "1px solid rgba(255,255,255,0.05)"
+                        }}>
+                            {professional_summary}
+                        </p>
+                    </section>
+                )}
+
                 {/* ATRIBUTOS */}
                 {attributes && attributes.length > 0 && (
                     <section style={{ marginBottom: 80 }}>
@@ -216,12 +266,39 @@ export default function PortfolioPublicPage() {
                     </section>
                 )}
 
+                {/* CONQUISTAS */}
+                {achievements && achievements.length > 0 && (
+                    <section style={{ marginBottom: 80 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", color: accentColor }}>
+                                <Trophy size={20} />
+                            </div>
+                            <h2 style={{ fontSize: 24, fontWeight: 800 }}>Conquistas e Títulos</h2>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                            {achievements.map((ach) => (
+                                <div key={ach.id} style={{ display: "flex", gap: 16, background: isPro ? `${accentColor}08` : "rgba(255,255,255,0.02)", padding: 20, borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)", transition: "0.2s", boxShadow: isPro ? `0 4px 15px ${accentColor}10` : "none" }} onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if(isPro) e.currentTarget.style.background = `${accentColor}1A`; }} onMouseLeave={e => { e.currentTarget.style.transform = "none"; if(isPro) e.currentTarget.style.background = `${accentColor}08`; }}>
+                                    {ach.year && (
+                                        <div style={{ width: 48, height: 48, borderRadius: 10, background: `${accentColor}15`, display: "flex", alignItems: "center", justifyContent: "center", color: accentColor, fontWeight: 800, fontSize: 13, flexShrink: 0, border: `1px solid ${accentColor}30` }}>
+                                            {ach.year}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc", marginBottom: 6 }}>{ach.title}</h3>
+                                        {ach.description && <p style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.5 }}>{ach.description}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* HISTÓRICO / CARREIRA */}
                 {history && history.length > 0 && (
                     <section style={{ marginBottom: 80 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: `${accentColor}20`, display: "flex", alignItems: "center", justifyContent: "center", color: accentColor }}>
-                                <Trophy size={20} />
+                                <Clock size={20} />
                             </div>
                             <h2 style={{ fontSize: 24, fontWeight: 800 }}>Trajetória</h2>
                         </div>
@@ -289,8 +366,8 @@ export default function PortfolioPublicPage() {
                 borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 24px", textAlign: "center", color: "#64748b"
             }}>
                 <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 24 }}>
-                    {(athlete.general_data as any)?.instagram && typeof (athlete.general_data as any).instagram === 'string' && (
-                        <a href={`https://instagram.com/${(athlete.general_data as any).instagram.replace("@","")}`} target="_blank" rel="noreferrer" style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f8fafc", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background=accentColor} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
+                    {typeof (athlete.general_data as Record<string, unknown>)?.instagram === 'string' && (
+                        <a href={`https://instagram.com/${((athlete.general_data as Record<string, unknown>).instagram as string).replace("@","")}`} target="_blank" rel="noreferrer" style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f8fafc", transition: "0.2s" }} onMouseEnter={e=>e.currentTarget.style.background=accentColor} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
                             <Instagram size={20} />
                         </a>
                     )}
