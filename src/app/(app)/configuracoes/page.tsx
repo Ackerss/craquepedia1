@@ -1,15 +1,16 @@
 import { getCompany, listPackages, listServices, listUsers } from "@/lib/data";
 import { requireUser } from "@/lib/auth";
+import { aiStatus, GEMINI_MODELS } from "@/lib/ai";
 import { brl } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { CompanyForm, NewUserForm, PackageBadge, PackageEditor, PasswordForm, ServiceEditor } from "./forms";
+import { AIForm, CompanyForm, NewUserForm, PackageBadge, PackageEditor, PasswordForm, ServiceEditor } from "./forms";
 
 export const metadata = { title: "Configurações" };
 export const dynamic = "force-dynamic";
 
-function Box({ title, desc, children, action }: { title: string; desc?: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Box({ title, desc, children, action, id }: { title: string; desc?: string; children: React.ReactNode; action?: React.ReactNode; id?: string }) {
   return (
-    <section className="card">
+    <section className="card scroll-mt-20" id={id}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
         <div>
           <h2 className="font-semibold">{title}</h2>
@@ -24,7 +25,7 @@ function Box({ title, desc, children, action }: { title: string; desc?: string; 
 
 export default async function Configuracoes() {
   const s = await requireUser();
-  const [company, services, packages, users] = await Promise.all([getCompany(), listServices(), listPackages(), listUsers()]);
+  const [company, services, packages, users, ai] = await Promise.all([getCompany(), listServices(), listPackages(), listUsers(), aiStatus()]);
   return (
     <div className="space-y-6">
       <PageHeader title="Configurações" subtitle="Serviços, pacotes, preços, acessos e dados da empresa." />
@@ -92,6 +93,10 @@ export default async function Configuracoes() {
           <PasswordForm />
         </Box>
       </div>
+
+      <Box id="ia" title="Inteligência artificial" desc="Organiza os formulários, revisa os perfis e escreve textos. Use a chave grátis do Gemini para economizar.">
+        <AIForm status={ai} models={GEMINI_MODELS.map((m) => ({ id: m.id, label: m.label }))} />
+      </Box>
 
       <Box title="Dados da empresa" desc="Aparecem no rodapé dos currículos e nas mensagens.">
         <CompanyForm c={company} />

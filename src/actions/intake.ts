@@ -7,7 +7,7 @@ import { after } from "next/server";
 import { db } from "@/db";
 import { athletes, files, intakes, orders, packages, type NewAthlete } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { aiEnabled, enrichAthlete } from "@/lib/ai";
+import { aiAvailable, enrichAthlete, reviewAthlete } from "@/lib/ai";
 import { getAthlete, logActivity, ready, uniqueSlug } from "@/lib/data";
 import { getSport } from "@/lib/sports";
 import { createDeliverablesFor } from "@/lib/work";
@@ -178,7 +178,7 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
   after(async () => {
     try {
       const a = await getAthlete(aid);
-      if (!a || !aiEnabled()) return;
+      if (!a || !(await aiAvailable())) return;
       const e = await enrichAthlete(a, raw);
       await db
         .update(athletes)
@@ -199,6 +199,13 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
         .where(eq(athletes.id, aid));
       await db.update(intakes).set({ status: "processado" }).where(eq(intakes.id, intake.id));
       await logActivity("ia", `IA organizou o perfil recebido (nota ${e.score})`, aid, null);
+      // em seguida a IA revisora confere o resultado (erros, incoerências, o que falta)
+      const fresh = await getAthlete(aid);
+      if (fresh) {
+        const r = await reviewAthlete(fresh);
+        await db.update(athletes).set({ aiReview: r, aiReviewedAt: new Date() }).where(eq(athletes.id, aid));
+        await logActivity("ia", `IA revisou o perfil recebido (nota ${r.score})`, aid, null);
+      }
     } catch (err) {
       console.error("[intake ai]", err);
     }

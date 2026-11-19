@@ -42,5 +42,12 @@ export const MIGRATIONS: { name: string; statements: string[] }[] = [
       "CREATE INDEX \"outreach_athlete_idx\" ON \"outreach\" USING btree (\"athlete_id\");",
       "CREATE INDEX \"outreach_contact_idx\" ON \"outreach\" USING btree (\"contact_id\");"
     ]
+  },
+  {
+    "name": "0002_review",
+    "statements": [
+      "ALTER TABLE \"athletes\" ADD COLUMN \"ai_review\" jsonb;",
+      "ALTER TABLE \"athletes\" ADD COLUMN \"ai_reviewed_at\" timestamp with time zone;"
+    ]
   }
 ];

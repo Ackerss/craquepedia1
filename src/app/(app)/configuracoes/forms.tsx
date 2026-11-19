@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Pencil, Plus, Star, Trash2 } from "lucide-react";
 import type { Package, Service } from "@/db/schema";
 import { changePassword, createUser } from "@/actions/auth";
-import { deletePackage, saveCompany, savePackage, saveService } from "@/actions/settings";
+import { deletePackage, saveAISettings, saveCompany, savePackage, saveService, testAI } from "@/actions/settings";
 import type { CompanySettings } from "@/lib/data";
 import { brl } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
@@ -200,5 +200,64 @@ export function PasswordForm() {
         <FormMessage state={state as S} />
       </div>
     </form>
+  );
+}
+
+export function AIForm({ status, models }: { status: { gemini: boolean; geminiFromSettings: boolean; keyHint: string; model: string; gateway: boolean }; models: { id: string; label: string }[] }) {
+  const [state, action] = useActionState(saveAISettings, null);
+  const [test, setTest] = useState<S>(null);
+  const [testing, startTest] = useTransition();
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className={`rounded-xl border p-3 text-sm ${status.gemini ? "border-brand-200 bg-brand-50 text-brand-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+          <p className="font-semibold">1ª opção: Gemini (sua chave grátis)</p>
+          <p>{status.gemini ? `Ativo — chave ${status.keyHint}` : "Sem chave ainda. Siga os passos abaixo."}</p>
+        </div>
+        <div className={`rounded-xl border p-3 text-sm ${status.gateway ? "border-slate-200 bg-slate-50 text-slate-700" : "border-slate-200 bg-white text-slate-500"}`}>
+          <p className="font-semibold">Reserva: IA da Vercel</p>
+          <p>{status.gateway ? "Ativa — usada se o Gemini falhar ou acabar a cota do dia." : "Só funciona no site publicado."}</p>
+        </div>
+      </div>
+      <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
+        <li>
+          Abra{" "}
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-medium text-brand-700 underline">
+            aistudio.google.com/apikey
+          </a>{" "}
+          com a sua conta Google.
+        </li>
+        <li>Clique em “Create API key” (Criar chave) e copie o código que começa com “AIza”.</li>
+        <li>Cole aqui embaixo e salve. Depois clique em “Testar IA”.</li>
+      </ol>
+      <form action={action} className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="label">Chave do Gemini {status.geminiFromSettings ? `(salva: ${status.keyHint})` : ""}</label>
+          <input name="geminiKey" type="password" autoComplete="off" className="input" placeholder={status.geminiFromSettings ? "Deixe vazio para manter a atual" : "AIza..."} />
+        </div>
+        <div>
+          <label className="label">Modelo</label>
+          <select name="model" defaultValue={status.model} className="input">
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {status.geminiFromSettings ? (
+          <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
+            <input type="checkbox" name="removeKey" /> Remover a chave salva
+          </label>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <Submit>Salvar</Submit>
+          <button type="button" className="btn-ghost" disabled={testing} onClick={() => startTest(async () => setTest(await testAI()))}>
+            {testing ? "Testando..." : "Testar IA"}
+          </button>
+          <FormMessage state={(test ?? state) as S} />
+        </div>
+      </form>
+    </div>
   );
 }
