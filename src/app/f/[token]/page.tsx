@@ -1,0 +1,49 @@
+import { eq } from "drizzle-orm";
+import { CheckCircle2 } from "lucide-react";
+import { db } from "@/db";
+import { intakes } from "@/db/schema";
+import { getCompany, ready } from "@/lib/data";
+import { firstName } from "@/lib/utils";
+import { LogoMark } from "@/components/ui/Logo";
+import { IntakeForm } from "./IntakeForm";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Formulário do atleta", robots: { index: false } };
+
+export default async function IntakePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  await ready();
+  const [intake] = await db.select().from(intakes).where(eq(intakes.token, token)).limit(1);
+  const company = await getCompany();
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <div className="mx-auto min-h-screen max-w-xl bg-white shadow-sm">
+        <header className="relative overflow-hidden bg-ink-900 px-5 pb-8 pt-6 text-white">
+          <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-brand-500/25 blur-3xl" />
+          <div className="relative flex items-center gap-2.5">
+            <LogoMark size={34} />
+            <span className="font-display text-lg font-semibold uppercase tracking-wide">
+              Craque<span className="text-brand-400">pedia</span>
+            </span>
+          </div>
+          <h1 className="relative mt-5 text-2xl font-bold leading-tight">
+            {intake?.clientName ? `Olá, ${firstName(intake.clientName)}! ` : "Olá! "}
+            Vamos montar seu material de atleta 🏆
+          </h1>
+          <p className="relative mt-1.5 text-sm text-slate-300">Leva uns 5 minutos. Quanto mais detalhes, melhor fica o seu currículo.</p>
+        </header>
+        {!intake ? (
+          <p className="px-5 py-16 text-center text-slate-600">Link inválido. Peça um novo link para a equipe {company.name}.</p>
+        ) : intake.status !== "aberto" ? (
+          <div className="flex flex-col items-center px-6 py-16 text-center">
+            <CheckCircle2 className="mb-3 size-12 text-brand-600" />
+            <p className="text-lg font-semibold">Este formulário já foi enviado.</p>
+            <p className="mt-1 text-slate-500">Obrigado! Se precisar mudar algo, fale com a equipe pelo WhatsApp.</p>
+          </div>
+        ) : (
+          <IntakeForm token={token} initialSport={intake.sport} initialName={intake.clientName} initialPhone={intake.clientPhone} company={company.name} />
+        )}
+      </div>
+    </div>
+  );
+}
