@@ -3,8 +3,8 @@ import { Inter, Oswald, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", weight: ["400", "500", "600", "700"] });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", weight: ["500", "700", "800"] });
+const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "Craquepedia", template: "%s · Craquepedia" },
