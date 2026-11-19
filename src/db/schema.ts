@@ -17,6 +17,26 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   },
 });
 
+export type ReviewField = "bio" | "bioShort" | "bioEn" | "playingStyle" | "playingStyleEn";
+export type ReviewIssue = {
+  level: "erro" | "atencao" | "dica";
+  area: string;
+  title: string;
+  detail: string;
+  field?: ReviewField;
+  suggestion?: string;
+  status?: "aplicado" | "ignorado";
+};
+/** Resultado da revisão por IA (o "olhar de revisor" antes de entregar). */
+export type AIReview = {
+  score: number;
+  verdict: "pronto" | "ajustar" | "incompleto";
+  summary: string;
+  strengths: string[];
+  issues: ReviewIssue[];
+  provider: string;
+};
+
 export type Achievement = { year: string; title: string; description?: string };
 export type CareerItem = { club: string; period: string; role?: string; highlights?: string };
 export type StatItem = { label: string; value: string };
@@ -88,6 +108,8 @@ export const athletes = pgTable(
     aiScore: integer("ai_score"),
     aiMissing: jsonb("ai_missing").$type<string[]>().notNull().default([]),
     aiTips: jsonb("ai_tips").$type<string[]>().notNull().default([]),
+    aiReview: jsonb("ai_review").$type<AIReview | null>(),
+    aiReviewedAt: timestamp("ai_reviewed_at", { withTimezone: true }),
     consentAt: timestamp("consent_at", { withTimezone: true }),
     publicEnabled: boolean("public_enabled").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

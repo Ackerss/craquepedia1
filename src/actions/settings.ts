@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { packages, services, settings } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { parseBRL, slugify, str } from "@/lib/utils";
+import { pingAI, type AISettings } from "@/lib/ai";
 
 export async function saveService(id: string | null, _: unknown, form: FormData) {
   await requireUser();
@@ -66,4 +67,32 @@ export async function saveCompany(_: unknown, form: FormData) {
     .onConflictDoUpdate({ target: settings.key, set: { value } });
   revalidatePath("/", "layout");
   return { ok: "Dados da empresa salvos." };
+}
+
+export async function saveAISettings(_: unknown, form: FormData) {
+  await requireUser();
+  const [row] = await db.select().from(settings).where(eq(settings.key, "ai")).limit(1);
+  const cur = (row?.value as AISettings) ?? {};
+  const typed = str(form.get("geminiKey"))?.replace(/\s+/g, "");
+  const value: AISettings = {
+    geminiKey: form.get("removeKey") === "on" ? "" : typed || cur.geminiKey || "",
+    model: str(form.get("model")) ?? cur.model ?? "gemini-2.5-flash",
+  };
+  if (typed && !/^AIza[\w-]{30,}$/.test(typed)) return { error: "Essa chave não parece do Google AI Studio (começa com AIza…)." };
+  await db
+    .insert(settings)
+    .values({ key: "ai", value })
+    .onConflictDoUpdate({ target: settings.key, set: { value } });
+  revalidatePath("/configuracoes");
+  return { ok: "Configuração da IA salva." };
+}
+
+export async function testAI() {
+  await requireUser();
+  try {
+    const provider = await pingAI();
+    return { ok: `IA funcionando: respondeu pelo ${provider}.` };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
 }

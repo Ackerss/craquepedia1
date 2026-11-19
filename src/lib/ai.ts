@@ -1,36 +1,110 @@
 import "server-only";
-import { generateText as aiGenerate } from "ai";
-import type { Achievement, Athlete, CareerItem, StatItem } from "@/db/schema";
+import { generateText as aiGenerate, type LanguageModel } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { settings, type Achievement, type AIReview, type Athlete, type CareerItem, type ReviewField, type ReviewIssue, type StatItem } from "@/db/schema";
+import { ready } from "./data";
 import { getSport } from "./sports";
 import { ageFrom } from "./utils";
 
-// Modelos via Vercel AI Gateway (autenticação automática na Vercel, sem chave para colar).
-const MODELS = [process.env.AI_MODEL, "google/gemini-2.5-flash", "openai/gpt-4o-mini"].filter(Boolean) as string[];
+// Duas fontes de IA, nesta ordem:
+// 1) Gemini direto do Google, com a chave grátis do Google AI Studio (colada em Configurações) — mais econômico.
+// 2) Vercel AI Gateway (autenticação automática na Vercel) — reserva, caso a chave falhe ou acabe a cota do dia.
+const GATEWAY_MODELS = [process.env.AI_MODEL, "google/gemini-2.5-flash", "openai/gpt-4o-mini"].filter(Boolean) as string[];
+export const GEMINI_MODELS = [
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (recomendado: rápido e grátis)" },
+  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (mais econômico)" },
+  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (mais caprichado, cota grátis menor)" },
+] as const;
 
+export type AISettings = { geminiKey?: string; model?: string };
+
+export async function getAISettings(): Promise<AISettings> {
+  await ready();
+  const [row] = await db.select().from(settings).where(eq(settings.key, "ai")).limit(1);
+  return (row?.value as AISettings) ?? {};
+}
+
+function geminiKey(cfg: AISettings) {
+  return cfg.geminiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
+}
+
+/** Vercel AI Gateway disponível (na Vercel é automático). */
 export function aiEnabled() {
   return !!(process.env.VERCEL || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
 }
 
-async function ask(prompt: string, json = true): Promise<string> {
+/** Alguma IA disponível (chave Gemini ou Vercel). */
+export async function aiAvailable() {
+  return aiEnabled() || !!geminiKey(await getAISettings());
+}
+
+export async function aiStatus() {
+  const cfg = await getAISettings();
+  const key = geminiKey(cfg);
+  return {
+    gemini: !!key,
+    geminiFromSettings: !!cfg.geminiKey,
+    keyHint: key ? `••••${key.slice(-4)}` : "",
+    model: cfg.model || GEMINI_MODELS[0].id,
+    gateway: aiEnabled(),
+  };
+}
+
+type Candidate = { label: string; model: LanguageModel; gateway: boolean };
+
+async function candidates(): Promise<Candidate[]> {
+  const cfg = await getAISettings();
+  const list: Candidate[] = [];
+  const key = geminiKey(cfg);
+  if (key) {
+    const google = createGoogleGenerativeAI({ apiKey: key });
+    const id = cfg.model || GEMINI_MODELS[0].id;
+    list.push({ label: `Gemini (${id})`, model: google(id), gateway: false });
+    if (id !== "gemini-2.5-flash-lite") list.push({ label: "Gemini (gemini-2.5-flash-lite)", model: google("gemini-2.5-flash-lite"), gateway: false });
+  }
+  if (aiEnabled()) for (const m of GATEWAY_MODELS) list.push({ label: `Vercel (${m})`, model: m, gateway: true });
+  return list;
+}
+
+/** Chama a IA com fallback automático. Devolve o texto e qual IA respondeu. */
+async function askWith(prompt: string, json = true): Promise<{ text: string; provider: string }> {
+  const list = await candidates();
+  if (!list.length) throw new Error("IA não configurada: cole a chave do Gemini em Configurações → Inteligência artificial.");
   let lastErr: unknown;
-  for (const model of MODELS) {
+  let gatewayBlocked = false;
+  for (const c of list) {
+    if (c.gateway && gatewayBlocked) continue;
     try {
       const res = await aiGenerate({
-        model,
+        model: c.model,
         prompt: json ? prompt + "\n\nIMPORTANTE: responda somente com JSON válido, sem markdown." : prompt,
-        temperature: json ? 0.4 : 0.8,
+        temperature: json ? 0.3 : 0.8,
         maxRetries: 1,
       });
-      return res.text;
+      return { text: res.text, provider: c.label };
     } catch (e) {
       lastErr = e;
       const msg = String((e as Error)?.message ?? e);
-      if (/authentication|No authentication|OIDC|api key/i.test(msg)) break;
+      if (c.gateway && /authentication|No authentication|OIDC|api key/i.test(msg)) gatewayBlocked = true;
     }
   }
   const msg = String((lastErr as Error)?.message ?? lastErr);
-  if (/authentication|OIDC|api key/i.test(msg)) throw new Error("IA indisponível: o AI Gateway da Vercel não está autorizado neste ambiente.");
+  if (/API key not valid|API_KEY_INVALID/i.test(msg)) throw new Error("A chave do Gemini é inválida. Confira em Configurações → Inteligência artificial.");
+  if (/quota|RESOURCE_EXHAUSTED|429/i.test(msg)) throw new Error("A cota grátis do Gemini acabou por hoje. Tente mais tarde ou troque o modelo em Configurações.");
+  if (/authentication|OIDC|api key/i.test(msg)) throw new Error("IA indisponível: cole a chave do Gemini em Configurações → Inteligência artificial.");
   throw new Error("Falha na IA: " + msg.slice(0, 300));
+}
+
+async function ask(prompt: string, json = true): Promise<string> {
+  return (await askWith(prompt, json)).text;
+}
+
+/** Teste rápido usado no botão "Testar IA" das Configurações. */
+export async function pingAI() {
+  const r = await askWith("Responda apenas: OK", false);
+  return r.provider;
 }
 
 function parseJSON<T>(txt: string): T {
@@ -160,3 +234,87 @@ export async function translateBio(text: string): Promise<string> {
   );
   return out.trim();
 }
+
+/* ---------------- Revisão por IA ---------------- */
+
+const FIELDS: Record<ReviewField, string> = {
+  bio: "Bio (português)",
+  bioShort: "Resumo curto",
+  bioEn: "Bio em inglês",
+  playingStyle: "Estilo de jogo",
+  playingStyleEn: "Estilo de jogo em inglês",
+};
+
+/**
+ * Revisor: confere o perfil como um editor experiente faria antes de mandar o currículo
+ * para um clube — erros, incoerências, exageros, tradução e o que falta para a modalidade.
+ */
+export async function reviewAthlete(a: Athlete): Promise<AIReview> {
+  const sport = getSport(a.sport);
+  const texts = (Object.keys(FIELDS) as ReviewField[]).map((k) => `[${k}] ${FIELDS[k]}: ${a[k] ? a[k] : "(vazio)"}`).join("\n");
+  const prompt = `Você é o revisor final da Craquepedia, agência brasileira que monta currículos e portfólios de atletas para clubes, olheiros e universidades.
+Antes de o material ir para o atleta e para os clubes, revise o perfil abaixo com olhar crítico de quem recruta atletas de ${sport.name}.
+
+CONFIRA:
+1. Ortografia, gramática e pontuação dos textos em português; textos em 3ª pessoa e tom profissional.
+2. Tradução para o inglês: fiel, natural e sem erros (termos certos do esporte em inglês).
+3. Coerência: idade x categoria, datas e ordem da carreira, clube atual x histórico, altura/peso plausíveis para a idade e a posição, números de estatísticas plausíveis, títulos repetidos.
+4. Exageros ou frases vazias que um olheiro descartaria ("melhor do Brasil", "craque nato" etc.) e afirmações sem base nos dados.
+5. O que falta e mais pesa para recrutadores de ${sport.name} nesta posição (ex.: vídeo, estatísticas, medidas, marcas, responsável para menor de idade, contatos).
+6. Dados de contato com cara de erro (telefone sem DDD, e-mail inválido, Instagram com espaço).
+
+REGRAS:
+- Nunca invente fatos. A sugestão de texto só pode reorganizar e corrigir o que já existe.
+- Quando o problema for num dos textos abaixo, preencha "field" com a chave entre colchetes e "suggestion" com o texto completo corrigido, pronto para substituir.
+- Para os demais problemas, deixe "field" e "suggestion" vazios e explique em "detail" o que a equipe deve fazer.
+- Máximo de 10 itens, do mais importante para o menos importante. Não repita itens.
+- "level": "erro" (precisa corrigir antes de enviar), "atencao" (deveria ajustar) ou "dica" (melhoria opcional).
+- "verdict": "pronto" (pode enviar), "ajustar" (enviar só após ajustes) ou "incompleto" (faltam dados essenciais).
+
+TEXTOS ATUAIS:
+${texts}
+
+DADOS COMPLETOS:
+${athleteContext(a)}
+Responsável: ${a.guardianName ?? "-"} ${a.guardianPhone ?? ""}
+Telefone: ${a.phone ?? "-"} | E-mail: ${a.email ?? "-"} | Instagram: ${a.instagram ?? "-"}
+Vídeos: ${(a.videos ?? []).length}
+
+Responda APENAS com JSON:
+{
+  "score": 0,
+  "verdict": "ajustar",
+  "summary": "2 frases dizendo se o material está bom para enviar e o principal ponto",
+  "strengths": ["até 3 pontos fortes do perfil"],
+  "issues": [{"level": "erro", "area": "Bio", "title": "título curto", "detail": "explicação objetiva", "field": "bio", "suggestion": "texto corrigido completo"}]
+}
+"score" vai de 0 a 100 e mede o quanto o material está pronto para impressionar um recrutador.`;
+  const { text, provider } = await askWith(prompt);
+  const out = parseJSON<Partial<AIReview>>(text);
+  const levels = ["erro", "atencao", "dica"];
+  const issues: ReviewIssue[] = (Array.isArray(out.issues) ? out.issues : [])
+    .filter((i) => i && i.title)
+    .slice(0, 12)
+    .map((i) => {
+      const field = i.field && i.field in FIELDS ? (i.field as ReviewField) : undefined;
+      const suggestion = field && typeof i.suggestion === "string" && i.suggestion.trim() ? i.suggestion.trim() : undefined;
+      return {
+        level: (levels.includes(i.level) ? i.level : "atencao") as ReviewIssue["level"],
+        area: String(i.area ?? (field ? FIELDS[field] : "Perfil")).slice(0, 40),
+        title: String(i.title).slice(0, 140),
+        detail: String(i.detail ?? "").slice(0, 600),
+        ...(field && suggestion ? { field, suggestion } : {}),
+      };
+    });
+  const verdict = (["pronto", "ajustar", "incompleto"].includes(out.verdict as string) ? out.verdict : issues.some((i) => i.level === "erro") ? "ajustar" : "pronto") as AIReview["verdict"];
+  return {
+    score: Math.max(0, Math.min(100, Math.round(Number(out.score) || 0))),
+    verdict,
+    summary: String(out.summary ?? "").slice(0, 500),
+    strengths: (Array.isArray(out.strengths) ? out.strengths : []).map(String).slice(0, 3),
+    issues,
+    provider,
+  };
+}
+
+export const REVIEW_FIELD_LABELS = FIELDS;

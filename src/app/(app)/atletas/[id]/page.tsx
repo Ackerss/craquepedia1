@@ -37,6 +37,7 @@ import { AddDeliverable, RequestDataButton } from "./client";
 import { SportIcon } from "@/components/ui/SportIcon";
 import { SocialArts } from "@/components/athlete/SocialArts";
 import { Readiness } from "@/components/athlete/Readiness";
+import { ReviewPanel, ReviewStrip } from "@/components/athlete/AIReview";
 import { Outreach } from "@/components/athlete/Outreach";
 import { baseCategory, readiness } from "@/lib/readiness";
 
@@ -73,6 +74,7 @@ export default async function AthletePage({
   const accent = a.accent ?? sport.color;
   const cat = baseCategory(a.birthDate, a.sport);
   const ready = readiness(a, gallery.length);
+  const reviewStale = !!(a.aiReview && a.aiReviewedAt && a.updatedAt.getTime() - a.aiReviewedAt.getTime() > 5000);
 
   return (
     <div>
@@ -194,6 +196,7 @@ export default async function AthletePage({
       {tab === "perfil" ? (
         <div className="grid gap-5 xl:grid-cols-3">
           <div className="space-y-5 xl:col-span-2">
+            <ReviewPanel athleteId={a.id} review={a.aiReview ?? null} reviewedAt={a.aiReviewedAt ? a.aiReviewedAt.toISOString() : null} stale={reviewStale} />
             {a.aiMissing.length || a.aiTips.length ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {a.aiMissing.length ? (
@@ -373,7 +376,12 @@ export default async function AthletePage({
         </div>
       ) : null}
 
-      {tab === "materiais" ? <Materials a={a} /> : null}
+      {tab === "materiais" ? (
+        <>
+          <ReviewStrip athleteId={a.id} review={a.aiReview ?? null} stale={reviewStale} />
+          <Materials a={a} />
+        </>
+      ) : null}
 
       {tab === "artes" ? (
         <SocialArts athleteId={a.id} hasStats={a.stats.length > 0 || !!(a.sportData?.melhores_marcas || a.sportData?.melhores_tempos)} hasAchievements={a.achievements.length > 0} version={String(a.updatedAt.getTime())} />

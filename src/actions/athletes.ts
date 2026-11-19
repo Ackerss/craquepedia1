@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { athletes, files, type NewAthlete } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { enrichAthlete, generateText, type TextKind } from "@/lib/ai";
+import { enrichAthlete, generateText, reviewAthlete, type TextKind } from "@/lib/ai";
 import { getAthlete, logActivity, ready, uniqueSlug } from "@/lib/data";
 import { getSport } from "@/lib/sports";
 import { int, str } from "@/lib/utils";
@@ -159,6 +159,40 @@ export async function runAthleteAI(id: string, mode: "fill" | "overwrite" = "fil
   } catch (err) {
     return { error: (err as Error).message };
   }
+}
+
+/** IA revisora: aponta erros, incoerências e o que falta antes de entregar. */
+export async function reviewAthleteAI(id: string) {
+  const s = await requireUser();
+  const a = await getAthlete(id);
+  if (!a) return { error: "Atleta não encontrado." };
+  try {
+    const r = await reviewAthlete(a);
+    const now = new Date();
+    await db.update(athletes).set({ aiReview: r, aiReviewedAt: now, updatedAt: now }).where(eq(athletes.id, id));
+    await logActivity("ia", `IA revisou o perfil (nota ${r.score})`, id, s.uid);
+    revalidatePath(`/atletas/${id}`);
+    return { ok: true };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+/** Aplica (ou ignora) uma sugestão da revisão. */
+export async function resolveReviewIssue(id: string, index: number, action: "aplicar" | "ignorar") {
+  await requireUser();
+  const a = await getAthlete(id);
+  const review = a?.aiReview;
+  const issue = review?.issues[index];
+  if (!a || !review || !issue) return { error: "Revisão não encontrada. Rode a revisão de novo." };
+  const issues = review.issues.map((x, i) => (i === index ? { ...x, status: action === "aplicar" ? ("aplicado" as const) : ("ignorado" as const) } : x));
+  const set: Partial<typeof athletes.$inferInsert> = { aiReview: { ...review, issues } };
+  if (action === "aplicar" && issue.field && issue.suggestion) set[issue.field] = issue.suggestion;
+  const now = new Date();
+  // aplicar muda o texto, mas a revisão continua valendo para os outros itens
+  await db.update(athletes).set({ ...set, aiReviewedAt: now, updatedAt: now }).where(eq(athletes.id, id));
+  revalidatePath(`/atletas/${id}`);
+  return { ok: true };
 }
 
 export async function generateAthleteText(id: string, kind: TextKind) {

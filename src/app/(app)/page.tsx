@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Inbox, Plus, Send, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertTriangle, BookOpen, Bot, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Inbox, Plus, Send, TrendingUp, Users, Wallet } from "lucide-react";
 import { listAthletes, listDeliverables, listIntakes, listOrders, listPaymentsSince, listPendingFollowUps, listUsers, recentActivities } from "@/lib/data";
 import { requireUser } from "@/lib/auth";
+import { aiStatus } from "@/lib/ai";
 import { STAGES } from "@/lib/catalog";
 import { getSport } from "@/lib/sports";
 import { brl, daysUntil, fmtDate, msSince, relTime, todayISO } from "@/lib/utils";
@@ -27,7 +28,7 @@ export default async function Dashboard() {
     recentActivities(12),
     listUsers(),
   ]);
-  const follow = await listPendingFollowUps();
+  const [follow, ai] = await Promise.all([listPendingFollowUps(), aiStatus()]);
   const open = dels.filter((d) => d.d.stage !== "entregue");
   const late = open.filter((d) => (daysUntil(d.d.dueDate) ?? 99) < 0);
   const soon = open
@@ -60,6 +61,9 @@ export default async function Dashboard() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/manual" className="btn-ghost">
+            <BookOpen className="size-4" /> Manual
+          </Link>
           <Link href="/formularios?novo=1" className="btn-ghost">
             <Send className="size-4" /> Enviar formulário
           </Link>
@@ -68,6 +72,23 @@ export default async function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {!ai.gemini ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center">
+          <Bot className="size-5 shrink-0 text-violet-700" />
+          <p className="flex-1 text-sm text-violet-900">
+            <b>Economize na IA:</b> cole a chave grátis do Gemini em Configurações. {ath.length === 0 ? "Primeira vez aqui? O Manual mostra o passo a passo do orçamento à entrega." : ""}
+          </p>
+          <div className="flex gap-2">
+            <Link href="/configuracoes#ia" className="btn-primary btn-sm">
+              Configurar IA
+            </Link>
+            <Link href="/manual" className="btn-ghost btn-sm">
+              Ver manual
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
