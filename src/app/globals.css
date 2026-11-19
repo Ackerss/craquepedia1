@@ -103,6 +103,7 @@ body {
     display: none !important;
   }
   .print-page {
+    break-after: page;
     box-shadow: none !important;
     margin: 0 !important;
     border-radius: 0 !important;

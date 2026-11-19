@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Download, FileText, Globe, MessageCircle, UserPlus } from "lucide-react";
 import { getAthleteBySlug, getCompany } from "@/lib/data";
 import { getSport } from "@/lib/sports";
+import { SportIcon } from "@/components/ui/SportIcon";
 import { baseUrl, qrSvg } from "@/lib/server-utils";
 import { ageFrom, fileUrl, igHandle, initials, waLink } from "@/lib/utils";
 
@@ -42,8 +43,8 @@ export default async function Cartao({ params }: { params: Promise<{ slug: strin
     <div className="flex min-h-screen items-start justify-center bg-ink-950 sm:items-center sm:py-10">
       <div className="relative w-full max-w-md overflow-hidden bg-white sm:rounded-[32px] sm:shadow-2xl">
         <div className="relative h-44" style={{ background: `linear-gradient(135deg, ${accent}, #0b1220 90%)` }}>
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
-          <span className="absolute right-5 top-4 text-5xl opacity-40">{sport.emoji}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={sport.image} alt="" className="absolute inset-y-0 right-0 h-full w-2/3 object-cover opacity-80" style={{ maskImage: "linear-gradient(90deg, transparent, black 60%)" }} />
           <span className="absolute left-5 top-5 font-display text-sm font-semibold uppercase tracking-[0.2em] text-white/80">{company.name}</span>
         </div>
         <div className="relative z-10 -mt-20 flex flex-col items-center px-6 text-center">
@@ -57,8 +58,8 @@ export default async function Cartao({ params }: { params: Promise<{ slug: strin
           )}
           <h1 className="mt-4 font-display text-4xl font-bold uppercase leading-none tracking-wide text-ink-900">{a.nickname || a.fullName.split(" ")[0]}</h1>
           {a.nickname ? <p className="mt-1 text-sm text-slate-500">{a.fullName}</p> : null}
-          <p className="mt-2 font-semibold" style={{ color: accent }}>
-            {sport.emoji} {[a.position, sport.name].filter(Boolean).join(" · ")}
+          <p className="mt-2 flex items-center justify-center gap-1.5 font-semibold" style={{ color: accent }}>
+            <SportIcon sport={sport.slug} className="size-4 shrink-0" /> {[a.position, sport.name].filter(Boolean).join(" · ")}
           </p>
           {a.currentClub ? <p className="text-sm text-slate-600">{a.currentClub}</p> : null}
           {a.bioShort ? <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{a.bioShort}</p> : null}

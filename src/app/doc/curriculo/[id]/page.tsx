@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getAthlete } from "@/lib/data";
 import { buildResumeData } from "@/lib/resume-data";
-import { getTemplate } from "@/lib/templates";
+import { getTemplate, resolveLang } from "@/lib/templates";
 import { ResumeViewer } from "@/components/resume/Viewer";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ m?: string; embed?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ m?: string; embed?: string; lang?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -19,10 +19,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CurriculoInterno({ params, searchParams }: Props) {
   await requireUser();
   const { id } = await params;
-  const { m, embed } = await searchParams;
+  const { m, embed, lang } = await searchParams;
   const a = await getAthlete(id);
   if (!a) notFound();
   const t = getTemplate(m);
-  const data = await buildResumeData(a, t.lang);
-  return <ResumeViewer data={data} template={t.id} hrefBase={`/doc/curriculo/${a.id}`} backHref={`/atletas/${a.id}?tab=materiais`} embed={embed === "1"} />;
+  const data = await buildResumeData(a, resolveLang(t, lang));
+  return <ResumeViewer data={data} template={t.id} hrefBase={`/doc/curriculo/${a.id}`} sport={a.sport} backHref={`/atletas/${a.id}?tab=materiais`} embed={embed === "1"} />;
 }

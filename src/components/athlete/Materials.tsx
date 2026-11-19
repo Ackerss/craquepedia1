@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { ExternalLink, FileText, Globe, IdCard, LayoutTemplate, MessageCircle, Printer } from "lucide-react";
+import { ExternalLink, FileText, Globe, IdCard, LayoutTemplate, MessageCircle, Printer, Sparkles } from "lucide-react";
 import type { Athlete } from "@/db/schema";
-import { RESUME_TEMPLATES } from "@/lib/templates";
+import { templatesFor } from "@/lib/templates";
+import { getSport } from "@/lib/sports";
 import { baseUrl, qrSvg } from "@/lib/server-utils";
 import { firstName, waLink } from "@/lib/utils";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { PortfolioThemePicker } from "@/components/athlete/HubActions";
+import { PORTFOLIO_THEMES } from "@/lib/portfolio-themes";
 
 export async function Materials({ a }: { a: Athlete }) {
   const base = await baseUrl();
@@ -14,6 +17,13 @@ export async function Materials({ a }: { a: Athlete }) {
     cv: `${base}/cv/${a.slug}`,
   };
   const qr = await qrSvg(links.portfolio);
+  const sport = getSport(a.sport);
+  const { recommended, general, others } = templatesFor(sport.slug);
+  const groups = [
+    { title: `Recomendados para ${sport.name}`, list: recommended, rec: true },
+    { title: `Modelos para todos os esportes (${general.length})`, list: general, rec: false },
+    { title: "Outros modelos", list: others, rec: false },
+  ];
   const msg = `Olá ${firstName(a.fullName)}! 🙌 Seus materiais da Craquepedia estão prontos:\n\n📄 Currículo: ${links.cv}\n🌐 Portfólio: ${links.portfolio}\n💳 Cartão digital: ${links.cartao}\n\nQualquer ajuste é só falar!`;
   return (
     <div className="space-y-6">
@@ -22,43 +32,53 @@ export async function Materials({ a }: { a: Athlete }) {
           Os links públicos deste atleta estão desativados. Ative em &quot;Links públicos ativos&quot; no topo da página para compartilhar.
         </p>
       ) : null}
-      <section>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 font-semibold">
-            <FileText className="size-5 text-brand-600" /> Currículos automáticos ({RESUME_TEMPLATES.length} modelos)
-          </h3>
-          <p className="text-sm text-slate-500">Gerados na hora a partir do perfil. Abra e clique em &quot;Baixar PDF&quot;.</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {RESUME_TEMPLATES.map((t) => (
-            <div key={t.id} className="card group overflow-hidden">
-              <Link href={`/doc/curriculo/${a.id}?m=${t.id}`} className="relative block h-56 overflow-hidden bg-slate-100">
-                <iframe
-                  src={`/doc/curriculo/${a.id}?m=${t.id}&embed=1`}
-                  title={t.name}
-                  loading="lazy"
-                  className="pointer-events-none absolute left-0 top-0 h-[1123px] w-[794px] origin-top-left scale-[0.33] border-0 sm:scale-[0.36]"
-                  tabIndex={-1}
-                />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition group-hover:opacity-100" />
-              </Link>
-              <div className="p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{t.name}</p>
-                  {t.lang === "en" ? <span className="badge bg-blue-50 text-blue-700"><Globe className="size-3" /> EN</span> : null}
-                </div>
-                <p className="mt-0.5 text-xs text-slate-500">{t.bestFor}</p>
-                <div className="mt-2 flex gap-1.5">
-                  <Link href={`/doc/curriculo/${a.id}?m=${t.id}`} className="btn-ghost btn-sm flex-1">
-                    <Printer className="size-4" /> Abrir / PDF
-                  </Link>
-                  <CopyButton text={`${links.cv}?m=${t.id}`} label="Link" />
-                </div>
-              </div>
+      {groups.map((g) =>
+        g.list.length ? (
+          <section key={g.title}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 font-semibold">
+                {g.rec ? <Sparkles className="size-5 text-amber-500" /> : <FileText className="size-5 text-brand-600" />} {g.title}
+              </h3>
+              {g.rec ? <p className="text-sm text-slate-500">Gerados na hora a partir do perfil. Todos abrem em português ou inglês.</p> : null}
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {g.list.map((t) => (
+                <div key={t.id} className="card group overflow-hidden">
+                  <Link href={`/doc/curriculo/${a.id}?m=${t.id}`} className="relative block h-56 overflow-hidden bg-slate-100">
+                    <iframe
+                      src={`/doc/curriculo/${a.id}?m=${t.id}&embed=1`}
+                      title={t.name}
+                      loading="lazy"
+                      className="pointer-events-none absolute left-0 top-0 h-[1123px] w-[794px] origin-top-left scale-[0.33] border-0 sm:scale-[0.36]"
+                      tabIndex={-1}
+                    />
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+                    {t.isNew ? <span className="badge absolute left-2 top-2 bg-amber-400 text-amber-950 shadow">Novo</span> : null}
+                  </Link>
+                  <div className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold">{t.name}</p>
+                      {t.onlyLang === "en" ? <span className="badge bg-blue-50 text-blue-700"><Globe className="size-3" /> EN</span> : null}
+                    </div>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500" title={t.description}>{t.bestFor}</p>
+                    <div className="mt-2 flex gap-1.5">
+                      <Link href={`/doc/curriculo/${a.id}?m=${t.id}`} className="btn-ghost btn-sm flex-1">
+                        <Printer className="size-4" /> {t.onlyLang === "en" ? "Abrir" : "PT"}
+                      </Link>
+                      {!t.onlyLang ? (
+                        <Link href={`/doc/curriculo/${a.id}?m=${t.id}&lang=en`} className="btn-ghost btn-sm" title="Abrir em inglês">
+                          <Globe className="size-4" /> EN
+                        </Link>
+                      ) : null}
+                      <CopyButton text={`${links.cv}?m=${t.id}`} label="Link" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null,
+      )}
 
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="card card-pad">
@@ -77,7 +97,10 @@ export async function Materials({ a }: { a: Athlete }) {
           <h3 className="mb-1 flex items-center gap-2 font-semibold">
             <LayoutTemplate className="size-5 text-brand-600" /> Portfólio online
           </h3>
-          <p className="mb-3 text-sm text-slate-500">Site completo com bio, carreira, números, galeria e vídeos.</p>
+          <p className="mb-3 text-sm text-slate-500">Site completo com bio, ficha técnica, números, galeria e vídeos (PT e EN). Escolha o visual:</p>
+          <div className="mb-3">
+            <PortfolioThemePicker id={a.id} slug={a.slug} value={a.portfolioTheme} themes={PORTFOLIO_THEMES.map(({ id, name, description }) => ({ id, name, description }))} />
+          </div>
           <div className="flex flex-wrap gap-2">
             <a href={links.portfolio} target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
               <ExternalLink className="size-4" /> Abrir

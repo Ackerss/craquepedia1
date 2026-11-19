@@ -212,3 +212,34 @@ export function DeleteAthlete({ id, name }: { id: string; name: string }) {
     </>
   );
 }
+
+export function PortfolioThemePicker({ id, slug, value, themes }: { id: string; slug: string; value: string; themes: { id: string; name: string; description: string }[] }) {
+  const [cur, setCur] = useState(value);
+  const [pending, start] = useTransition();
+  return (
+    <div className="space-y-1.5">
+      {themes.map((t) => (
+        <label key={t.id} className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2 text-sm transition ${cur === t.id ? "border-brand-500 bg-brand-50" : "border-slate-200 hover:border-slate-300"}`}>
+          <input
+            type="radio"
+            name={`tema-${id}`}
+            className="mt-1 accent-emerald-600"
+            checked={cur === t.id}
+            disabled={pending}
+            onChange={() => {
+              setCur(t.id);
+              start(() => setAthleteField(id, "portfolioTheme", t.id));
+            }}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="font-semibold text-ink-900">{t.name}</span>
+            <span className="block text-xs text-slate-500">{t.description}</span>
+          </span>
+          <a href={`/p/${slug}?tema=${t.id}`} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-semibold text-brand-700 hover:underline" onClick={(e) => e.stopPropagation()}>
+            ver
+          </a>
+        </label>
+      ))}
+    </div>
+  );
+}

@@ -1,9 +1,9 @@
 import "server-only";
-import { and, asc, desc, eq, ilike, inArray, ne, or, sql as dsql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, lte, ne, or, sql as dsql } from "drizzle-orm";
 import { db } from "@/db";
-import { activities, athletes, deliverables, intakes, orders, packages, payments, services, settings, users } from "@/db/schema";
+import { activities, athletes, contacts, deliverables, intakes, orders, outreach, packages, payments, services, settings, users } from "@/db/schema";
 import { ensureDatabase } from "@/db/setup";
-import { slugify } from "./utils";
+import { slugify, todayISO } from "./utils";
 
 export async function ready() {
   await ensureDatabase();
@@ -202,4 +202,38 @@ export async function getCompany(): Promise<CompanySettings> {
   await ready();
   const [row] = await db.select().from(settings).where(eq(settings.key, "company")).limit(1);
   return { ...DEFAULT_COMPANY, ...((row?.value as Partial<CompanySettings>) ?? {}) };
+}
+
+export async function listContacts() {
+  await ready();
+  return db
+    .select({
+      c: contacts,
+      sent: dsql<number>`(select count(*)::int from ${outreach} where ${outreach.contactId} = ${contacts.id})`,
+      positive: dsql<number>`(select count(*)::int from ${outreach} where ${outreach.contactId} = ${contacts.id} and ${outreach.status} in ('interessado','teste','respondeu'))`,
+    })
+    .from(contacts)
+    .orderBy(asc(contacts.name));
+}
+
+export async function listOutreachForAthlete(athleteId: string) {
+  await ready();
+  return db
+    .select({ o: outreach, c: contacts })
+    .from(outreach)
+    .innerJoin(contacts, eq(outreach.contactId, contacts.id))
+    .where(eq(outreach.athleteId, athleteId))
+    .orderBy(desc(outreach.sentAt), desc(outreach.createdAt));
+}
+
+export async function listPendingFollowUps() {
+  await ready();
+  return db
+    .select({ o: outreach, c: contacts, athleteName: athletes.fullName, athleteNickname: athletes.nickname, athleteSport: athletes.sport })
+    .from(outreach)
+    .innerJoin(contacts, eq(outreach.contactId, contacts.id))
+    .innerJoin(athletes, eq(outreach.athleteId, athletes.id))
+    .where(and(eq(outreach.status, "enviado"), lte(outreach.followUpAt, todayISO())))
+    .orderBy(asc(outreach.followUpAt))
+    .limit(10);
 }

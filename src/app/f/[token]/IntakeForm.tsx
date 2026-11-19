@@ -7,6 +7,7 @@ import { getSport } from "@/lib/sports";
 import { SportPicker, SportSpecific } from "@/components/athlete/SportFields";
 import { compressImage } from "@/components/athlete/Photos";
 import { keepValues } from "@/lib/form-submit";
+import { SportIcon } from "@/components/ui/SportIcon";
 
 const UF = "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
 const STEPS = ["Esporte", "Sobre você", "Dados esportivos", "Sua trajetória", "Fotos e envio"];
@@ -194,8 +195,8 @@ export function IntakeForm({
 
         {/* 2 Dados esportivos */}
         <div className={step === 2 ? "block space-y-4" : "hidden"}>
-          <h2 className="text-xl font-bold text-ink-900">
-            {def?.emoji} Dados de {def?.name ?? "esporte"}
+          <h2 className="flex items-center gap-2 text-xl font-bold text-ink-900">
+            <SportIcon sport={def?.slug} className="size-5 text-brand-600" /> Dados de {def?.name ?? "esporte"}
           </h2>
           <F label={def?.clubLabel ?? "Clube atual"}>
             <input name="currentClub" className="input" />

@@ -132,3 +132,32 @@ export function int(v: FormDataEntryValue | null | undefined) {
 export function msSince(v: string | Date) {
   return Date.now() - new Date(v).getTime();
 }
+
+const UN = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+const DZ = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+const CT = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+function ate999(n: number): string {
+  if (n === 0) return "";
+  if (n === 100) return "cem";
+  const c = Math.floor(n / 100);
+  const r = n % 100;
+  const parts: string[] = [];
+  if (c) parts.push(CT[c]);
+  if (r) parts.push(r < 20 ? UN[r] : DZ[Math.floor(r / 10)] + (r % 10 ? " e " + UN[r % 10] : ""));
+  return parts.join(" e ");
+}
+
+/** Valor em reais por extenso (até 999.999,99). Ex.: 1250,50 → "mil duzentos e cinquenta reais e cinquenta centavos". */
+export function extenso(cents: number) {
+  const reais = Math.floor(cents / 100);
+  const cent = cents % 100;
+  const mil = Math.floor(reais / 1000);
+  const resto = reais % 1000;
+  let txt = "";
+  if (mil) txt = (mil === 1 ? "mil" : ate999(mil) + " mil") + (resto ? (resto < 100 || resto % 100 === 0 ? " e " : " ") + ate999(resto) : "");
+  else txt = ate999(resto);
+  const r = reais ? `${txt} ${reais === 1 ? "real" : "reais"}` : "";
+  const c = cent ? `${ate999(cent)} ${cent === 1 ? "centavo" : "centavos"}` : "";
+  return [r, c].filter(Boolean).join(" e ") || "zero reais";
+}

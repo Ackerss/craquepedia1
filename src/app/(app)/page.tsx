@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Inbox, Plus, Send, TrendingUp, Users, Wallet } from "lucide-react";
-import { listAthletes, listDeliverables, listIntakes, listOrders, listPaymentsSince, listUsers, recentActivities } from "@/lib/data";
+import { listAthletes, listDeliverables, listIntakes, listOrders, listPaymentsSince, listPendingFollowUps, listUsers, recentActivities } from "@/lib/data";
 import { requireUser } from "@/lib/auth";
 import { STAGES } from "@/lib/catalog";
 import { getSport } from "@/lib/sports";
 import { brl, daysUntil, fmtDate, msSince, relTime, todayISO } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
+import { SportBadge } from "@/components/ui/SportIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function Dashboard() {
     recentActivities(12),
     listUsers(),
   ]);
+  const follow = await listPendingFollowUps();
   const open = dels.filter((d) => d.d.stage !== "entregue");
   const late = open.filter((d) => (daysUntil(d.d.dueDate) ?? 99) < 0);
   const soon = open
@@ -107,7 +109,7 @@ export default async function Dashboard() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[15px] font-medium text-ink-900">{d.title}</p>
                         <p className="truncate text-sm text-slate-500">
-                          {getSport(athleteSport).emoji} {athleteName} · {userName(d.assigneeId)}
+                          {getSport(athleteSport).name} · {athleteName} · {userName(d.assigneeId)}
                         </p>
                       </div>
                       <span className="hidden text-xs font-medium sm:inline" style={{ color: stage?.color }}>
@@ -124,6 +126,7 @@ export default async function Dashboard() {
           )}
         </section>
 
+        <div className="space-y-6">
         <section className="card">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 font-semibold">
@@ -140,7 +143,7 @@ export default async function Dashboard() {
               {newForms.slice(0, 6).map((i) => (
                 <li key={i.id}>
                   <Link href={i.athleteId ? `/atletas/${i.athleteId}` : "/formularios"} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
-                    <div className="flex size-9 items-center justify-center rounded-full bg-brand-50 text-lg">{getSport(i.sport).emoji}</div>
+                    <SportBadge sport={i.sport} size={36} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{i.clientName}</p>
                       <p className="text-xs text-slate-500">{i.submittedAt ? relTime(i.submittedAt) : ""}</p>
@@ -152,6 +155,35 @@ export default async function Dashboard() {
             </ul>
           )}
         </section>
+        {follow.length ? (
+          <section className="card">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="flex items-center gap-2 font-semibold">
+                <Send className="size-5 text-violet-600" /> Cobrar retorno de clubes
+              </h2>
+              <Link href="/contatos" className="text-sm font-medium text-brand-700 hover:underline">
+                Contatos
+              </Link>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {follow.map((f) => (
+                <li key={f.o.id}>
+                  <Link href={`/atletas/${f.o.athleteId}?tab=divulgacao`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
+                    <SportBadge sport={f.athleteSport} size={32} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{f.c.organization || f.c.name}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        {f.athleteNickname || f.athleteName} · enviado {fmtDate(f.o.sentAt)}
+                      </p>
+                    </div>
+                    <ArrowRight className="size-4 text-slate-400" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

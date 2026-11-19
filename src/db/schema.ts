@@ -81,6 +81,7 @@ export const athletes = pgTable(
     photoId: uuid("photo_id"),
     coverId: uuid("cover_id"),
     accent: text("accent").default("#10b981"),
+    portfolioTheme: text("portfolio_theme").notNull().default("arena"),
     responsibleId: uuid("responsible_id"),
     source: text("source"),
     notes: text("notes"),
@@ -224,6 +225,49 @@ export const settings = pgTable("settings", {
   value: jsonb("value").$type<unknown>().notNull(),
 });
 
+/** Contatos de divulgação: clubes, olheiros, empresários, universidades. */
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    organization: text("organization"),
+    kind: text("kind").notNull().default("clube"), // clube | olheiro | empresario | universidade | imprensa | outro
+    sports: jsonb("sports").$type<string[]>().notNull().default([]),
+    country: text("country").default("Brasil"),
+    city: text("city"),
+    email: text("email"),
+    phone: text("phone"),
+    instagram: text("instagram"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("contacts_kind_idx").on(t.kind)],
+);
+
+/** Envio do material de um atleta para um contato, com o retorno. */
+export const outreach = pgTable(
+  "outreach",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    athleteId: uuid("athlete_id")
+      .notNull()
+      .references(() => athletes.id, { onDelete: "cascade" }),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("enviado"), // enviado | respondeu | interessado | teste | sem_retorno | recusou
+    channel: text("channel").default("whatsapp"),
+    sentAt: date("sent_at").notNull(),
+    followUpAt: date("follow_up_at"),
+    notes: text("notes"),
+    userId: uuid("user_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("outreach_athlete_idx").on(t.athleteId), index("outreach_contact_idx").on(t.contactId)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Athlete = typeof athletes.$inferSelect;
 export type NewAthlete = typeof athletes.$inferInsert;
@@ -234,3 +278,5 @@ export type Payment = typeof payments.$inferSelect;
 export type Deliverable = typeof deliverables.$inferSelect;
 export type Intake = typeof intakes.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type Contact = typeof contacts.$inferSelect;
+export type Outreach = typeof outreach.$inferSelect;

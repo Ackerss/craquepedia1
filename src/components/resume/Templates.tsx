@@ -1,117 +1,11 @@
 /* eslint-disable react-hooks/static-components -- documento estático renderizado no servidor; os títulos locais usam a cor do atleta */
 /* eslint-disable @next/next/no-img-element */
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { ResumeData } from "@/lib/resume-data";
 import { initials } from "@/lib/utils";
-
-/* ------------------------------------------------------------------ */
-/* Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
-const PAGE: CSSProperties = {
-  width: 794,
-  minHeight: 1123,
-  overflow: "hidden",
-  position: "relative",
-  boxShadow: "0 10px 40px rgba(15,23,42,.18)",
-};
-
-const clamp = (lines: number): CSSProperties => ({
-  display: "-webkit-box",
-  WebkitLineClamp: lines,
-  WebkitBoxOrient: "vertical",
-  overflow: "hidden",
-});
-
-function lim<T>(arr: T[] | undefined, n: number): T[] {
-  return (arr ?? []).slice(0, n);
-}
-
-function Photo({
-  d,
-  size,
-  radius = 9999,
-  className = "",
-  style,
-  src,
-}: {
-  d: ResumeData;
-  size: number | string;
-  radius?: number | string;
-  className?: string;
-  style?: CSSProperties;
-  src?: string | null;
-}) {
-  const url = src === undefined ? d.photo : src;
-  const box: CSSProperties = { width: size, height: size, borderRadius: radius, ...style };
-  if (url) return <img src={url} alt={d.name} className={`object-cover ${className}`} style={box} />;
-  return (
-    <div
-      className={`flex items-center justify-center font-display font-semibold text-white ${className}`}
-      style={{ ...box, background: d.accent, fontSize: typeof size === "number" ? size * 0.36 : 48 }}
-    >
-      {initials(d.name)}
-    </div>
-  );
-}
-
-function QR({ svg, size = 84, className = "", style }: { svg: string; size?: number; className?: string; style?: CSSProperties }) {
-  return <div className={`[&>svg]:h-full [&>svg]:w-full ${className}`} style={{ width: size, height: size, ...style }} dangerouslySetInnerHTML={{ __html: svg }} />;
-}
-
-function Footer({ d, dark = false, className = "" }: { d: ResumeData; dark?: boolean; className?: string }) {
-  return (
-    <div className={`flex items-center justify-between text-[9px] uppercase tracking-[0.18em] ${dark ? "text-white/40" : "text-slate-400"} ${className}`}>
-      <span>
-        {d.company.name || "Craquepedia"}
-        {d.company.instagram ? ` · ${d.company.instagram}` : ""}
-      </span>
-      <span>{d.sportName}</span>
-    </div>
-  );
-}
-
-type KV = [string, string];
-
-function personal(d: ResumeData): KV[] {
-  return (
-    [
-      [d.L.born, d.birth ? `${d.birth}${d.age !== null ? ` (${d.age} ${d.L.years})` : ""}` : ""],
-      [d.L.nationality, d.nationality],
-      [d.L.city, d.city],
-      [d.L.languages, d.languages],
-    ] as KV[]
-  ).filter(([, v]) => v);
-}
-
-function physical(d: ResumeData): KV[] {
-  return (
-    [
-      [d.positionLabel, d.position],
-      [d.L.height, d.height],
-      [d.L.weight, d.weight],
-      [d.sideLabel, d.side],
-      [d.clubLabel, d.club],
-      ...d.details,
-    ] as KV[]
-  ).filter(([k, v]) => k && v);
-}
-
-function contact(d: ResumeData): KV[] {
-  return (
-    [
-      ["WhatsApp", d.phone],
-      ["E-mail", d.email],
-      ["Instagram", d.instagram],
-      [d.L.agent, d.agent],
-      [d.L.guardian, d.guardian],
-    ] as KV[]
-  ).filter(([, v]) => v);
-}
-
-function bioText(d: ResumeData) {
-  return d.bio || d.bioShort;
-}
+import { PAGE, clamp, lim, Photo, QR, Footer, personal, physical, contact, bioText, type KV } from "./parts";
+import { CourtDiagram, hasDiagram } from "./diagrams";
+import { Card, Dossie, Luta, Marcas, Quadra, Trajetoria } from "./TemplatesPlus";
 
 /* ------------------------------------------------------------------ */
 /* 1. Clássico                                                         */
@@ -537,73 +431,8 @@ function Premium({ d }: { d: ResumeData }) {
 /* 4. Ficha Scout                                                      */
 /* ------------------------------------------------------------------ */
 
-const PITCH: Record<string, [number, number]> = {
-  goleiro: [60, 166],
-  goalkeeper: [60, 166],
-  zagueiro: [60, 142],
-  "center back": [60, 142],
-  fixo: [60, 140],
-  "defender (fixo)": [60, 140],
-  "lateral direito": [102, 128],
-  "right back": [102, 128],
-  "lateral esquerdo": [18, 128],
-  "left back": [18, 128],
-  volante: [60, 116],
-  "defensive midfielder": [60, 116],
-  "meio-campista": [60, 96],
-  "central midfielder": [60, 96],
-  universal: [60, 92],
-  "meia atacante": [60, 70],
-  "attacking midfielder": [60, 70],
-  "ponta direita": [102, 52],
-  "right winger": [102, 52],
-  "ala direita": [102, 70],
-  "right wing": [102, 70],
-  "ponta esquerda": [18, 52],
-  "left winger": [18, 52],
-  "ala esquerda": [18, 70],
-  "left wing": [18, 70],
-  "segundo atacante": [60, 46],
-  "second striker": [60, 46],
-  centroavante: [60, 26],
-  striker: [60, 26],
-  pivô: [60, 30],
-  pivot: [60, 30],
-};
-
-function Pitch({ d }: { d: ResumeData }) {
-  const parts = d.position
-    .split(",")
-    .map((p) => p.trim().toLowerCase())
-    .filter(Boolean);
-  const dots = parts.map((p) => PITCH[p]).filter((x): x is [number, number] => !!x);
-  return (
-    <svg viewBox="0 0 120 180" className="h-full w-full">
-      <rect x="0" y="0" width="120" height="180" rx="6" fill="#15803d" />
-      {Array.from({ length: 9 }).map((_, i) => (
-        <rect key={i} x="0" y={i * 20} width="120" height="10" fill="#16a34a" opacity=".55" />
-      ))}
-      <g fill="none" stroke="rgba(255,255,255,.85)" strokeWidth="1.2">
-        <rect x="5" y="5" width="110" height="170" />
-        <line x1="5" y1="90" x2="115" y2="90" />
-        <circle cx="60" cy="90" r="14" />
-        <rect x="30" y="5" width="60" height="24" />
-        <rect x="45" y="5" width="30" height="9" />
-        <rect x="30" y="151" width="60" height="24" />
-        <rect x="45" y="166" width="30" height="9" />
-      </g>
-      {dots.map(([x, y], i) => (
-        <g key={i}>
-          <circle cx={x} cy={y} r={i === 0 ? 11 : 8} fill={d.accent} opacity=".35" />
-          <circle cx={x} cy={y} r={i === 0 ? 6 : 4.5} fill={i === 0 ? "#fbbf24" : "#ffffff"} stroke="#0b1220" strokeWidth="1" />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
 function Scout({ d }: { d: ResumeData }) {
-  const showPitch = d.sportSlug === "futebol" || d.sportSlug === "futsal";
+  const showPitch = hasDiagram(d.sportSlug, d.positionKeys);
   const H = ({ children }: { children: ReactNode }) => (
     <h2 className="mb-2 bg-slate-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white">{children}</h2>
   );
@@ -648,7 +477,7 @@ function Scout({ d }: { d: ResumeData }) {
             <div>
               <H>{d.positionLabel}</H>
               <div className="mx-auto h-[250px] w-[167px]">
-                <Pitch d={d} />
+                <CourtDiagram sport={d.sportSlug} keys={d.positionKeys} accent={d.accent} />
               </div>
             </div>
           ) : null}
@@ -1293,6 +1122,12 @@ const MAP: Record<string, (p: { d: ResumeData }) => React.JSX.Element> = {
   minimalista: Minimalista,
   international: International,
   college: College,
+  quadra: Quadra,
+  marcas: Marcas,
+  luta: Luta,
+  card: Card,
+  trajetoria: Trajetoria,
+  dossie: Dossie,
 };
 
 export function ResumeDocument({ data, template }: { data: ResumeData; template: string }) {

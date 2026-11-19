@@ -1,6 +1,7 @@
 "use client";
 
 import { getSport, SPORTS, type SportField } from "@/lib/sports";
+import { SportArt } from "@/components/ui/SportIcon";
 
 export function SportPicker({ value, onChange, dark = false }: { value: string; onChange: (v: string) => void; dark?: boolean }) {
   return (
@@ -12,7 +13,7 @@ export function SportPicker({ value, onChange, dark = false }: { value: string; 
             key={s.slug}
             type="button"
             onClick={() => onChange(s.slug)}
-            className={`flex flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-center text-xs font-semibold transition ${
+            className={`group flex flex-col items-center gap-1.5 rounded-2xl border p-1.5 pb-2 text-center text-xs font-semibold transition ${
               active
                 ? "border-brand-500 bg-brand-50 text-brand-800 ring-4 ring-brand-500/15"
                 : dark
@@ -20,7 +21,7 @@ export function SportPicker({ value, onChange, dark = false }: { value: string; 
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
             }`}
           >
-            <span className="text-2xl leading-none">{s.emoji}</span>
+            <SportArt sport={s.slug} className={`aspect-square w-full transition ${active ? "" : "opacity-85 group-hover:opacity-100"}`} rounded="rounded-xl" />
             <span className="leading-tight">{s.name}</span>
           </button>
         );
