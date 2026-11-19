@@ -53,7 +53,7 @@ export function NewIntake({ packages, autoOpen }: { packages: { id: string; name
                 <option value="">Atleta escolhe</option>
                 {SPORTS.map((s) => (
                   <option key={s.slug} value={s.slug}>
-                    {s.emoji} {s.name}
+                    {s.name}
                   </option>
                 ))}
               </select>

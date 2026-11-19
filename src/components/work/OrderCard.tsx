@@ -85,7 +85,12 @@ export function OrderCard({ order, payments }: { order: Order; payments: Payment
               <span>
                 {fmtDate(p.paidAt)} · {p.method}
               </span>
-              <span className="font-medium text-brand-700">+ {brl(p.amountCents)}</span>
+              <span className="flex items-center gap-2">
+                <span className="font-medium text-brand-700">+ {brl(p.amountCents)}</span>
+                <a href={`/doc/recibo/${p.id}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-ink-900 hover:underline">
+                  recibo
+                </a>
+              </span>
             </li>
           ))}
         </ul>

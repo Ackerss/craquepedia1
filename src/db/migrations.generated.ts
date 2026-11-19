@@ -29,5 +29,18 @@ export const MIGRATIONS: { name: string; statements: string[] }[] = [
       "CREATE INDEX \"files_athlete_idx\" ON \"files\" USING btree (\"athlete_id\");",
       "CREATE INDEX \"orders_athlete_idx\" ON \"orders\" USING btree (\"athlete_id\");"
     ]
+  },
+  {
+    "name": "0001_plus",
+    "statements": [
+      "CREATE TABLE \"contacts\" (\n\t\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"organization\" text,\n\t\"kind\" text DEFAULT 'clube' NOT NULL,\n\t\"sports\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"country\" text DEFAULT 'Brasil',\n\t\"city\" text,\n\t\"email\" text,\n\t\"phone\" text,\n\t\"instagram\" text,\n\t\"notes\" text,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+      "CREATE TABLE \"outreach\" (\n\t\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\n\t\"athlete_id\" uuid NOT NULL,\n\t\"contact_id\" uuid NOT NULL,\n\t\"status\" text DEFAULT 'enviado' NOT NULL,\n\t\"channel\" text DEFAULT 'whatsapp',\n\t\"sent_at\" date NOT NULL,\n\t\"follow_up_at\" date,\n\t\"notes\" text,\n\t\"user_id\" uuid,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\n\t\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+      "ALTER TABLE \"athletes\" ADD COLUMN \"portfolio_theme\" text DEFAULT 'arena' NOT NULL;",
+      "ALTER TABLE \"outreach\" ADD CONSTRAINT \"outreach_athlete_id_athletes_id_fk\" FOREIGN KEY (\"athlete_id\") REFERENCES \"public\".\"athletes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "ALTER TABLE \"outreach\" ADD CONSTRAINT \"outreach_contact_id_contacts_id_fk\" FOREIGN KEY (\"contact_id\") REFERENCES \"public\".\"contacts\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "CREATE INDEX \"contacts_kind_idx\" ON \"contacts\" USING btree (\"kind\");",
+      "CREATE INDEX \"outreach_athlete_idx\" ON \"outreach\" USING btree (\"athlete_id\");",
+      "CREATE INDEX \"outreach_contact_idx\" ON \"outreach\" USING btree (\"contact_id\");"
+    ]
   }
 ];

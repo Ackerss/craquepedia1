@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Plus,
+  Building2,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { logout } from "@/actions/auth";
@@ -24,6 +25,7 @@ const ITEMS = [
   { href: "/atletas", label: "Atletas", icon: Users },
   { href: "/entregas", label: "Entregas", icon: SquareKanban },
   { href: "/formularios", label: "Formulários", icon: ClipboardList },
+  { href: "/contatos", label: "Contatos", icon: Building2 },
   { href: "/financeiro", label: "Financeiro", icon: Wallet },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];

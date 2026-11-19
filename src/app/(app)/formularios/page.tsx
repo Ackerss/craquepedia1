@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { Empty, PageHeader } from "@/components/ui/PageHeader";
 import { DeleteIntake } from "./DeleteIntake";
 import { NewIntake } from "./NewIntake";
+import { SportBadge } from "@/components/ui/SportIcon";
 
 export const metadata = { title: "Formulários" };
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export default async function Formularios({ searchParams }: { searchParams: Prom
             const sport = i.sport ? getSport(i.sport) : null;
             return (
               <div key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
-                <div className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-xl">{sport?.emoji ?? "📝"}</div>
+                <SportBadge sport={sport?.slug ?? "outro"} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-ink-900">{i.clientName || "Atleta sem nome"}</p>
                   <p className="text-sm text-slate-500">

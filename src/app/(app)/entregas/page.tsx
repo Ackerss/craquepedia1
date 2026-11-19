@@ -3,7 +3,6 @@ import { SquareKanban } from "lucide-react";
 import { listDeliverables, listServices, listUsers } from "@/lib/data";
 import { requireUser } from "@/lib/auth";
 import { STAGES } from "@/lib/catalog";
-import { getSport } from "@/lib/sports";
 import { daysUntil, msSince } from "@/lib/utils";
 import { DeliverableCard } from "@/components/work/DeliverableCard";
 import { Empty, PageHeader } from "@/components/ui/PageHeader";
@@ -70,7 +69,7 @@ export default async function Entregas({ searchParams }: { searchParams: Promise
                       d={r.d}
                       users={users}
                       compact={st.key === "entregue"}
-                      athlete={{ id: r.d.athleteId, name: r.athleteNickname || r.athleteName, emoji: getSport(r.athleteSport).emoji }}
+                      athlete={{ id: r.d.athleteId, name: r.athleteNickname || r.athleteName, sport: r.athleteSport }}
                     />
                   ))}
                   {col.length === 0 ? <p className="px-1 py-6 text-center text-xs text-slate-400">vazio</p> : null}

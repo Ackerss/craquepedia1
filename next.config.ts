@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "8mb" },
   },
   serverExternalPackages: ["postgres"],
+  outputFileTracingIncludes: {
+    "/api/arte/[id]": ["./src/assets/fonts/**", "./public/sports/**"],
+  },
 };
 
 export default nextConfig;

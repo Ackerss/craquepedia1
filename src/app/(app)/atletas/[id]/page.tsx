@@ -17,6 +17,10 @@ import {
   Trophy,
   User,
   Wallet,
+  Globe,
+  IdCard,
+  Palette,
+  Send,
 } from "lucide-react";
 import { getAthleteBundle, listPackages, listServices, listUsers } from "@/lib/data";
 import { STAGES } from "@/lib/catalog";
@@ -30,13 +34,20 @@ import { ContractButton } from "@/components/work/ContractForm";
 import { DeliverableCard } from "@/components/work/DeliverableCard";
 import { OrderCard } from "@/components/work/OrderCard";
 import { AddDeliverable, RequestDataButton } from "./client";
+import { SportIcon } from "@/components/ui/SportIcon";
+import { SocialArts } from "@/components/athlete/SocialArts";
+import { Readiness } from "@/components/athlete/Readiness";
+import { Outreach } from "@/components/athlete/Outreach";
+import { baseCategory, readiness } from "@/lib/readiness";
 
 export const dynamic = "force-dynamic";
 
 const TABS = [
   { key: "perfil", label: "Perfil", icon: User },
   { key: "entregas", label: "Entregas", icon: ClipboardList },
-  { key: "materiais", label: "Currículos e links", icon: FileText },
+  { key: "materiais", label: "Materiais", icon: FileText },
+  { key: "artes", label: "Artes", icon: Palette },
+  { key: "divulgacao", label: "Divulgação", icon: Send },
   { key: "fotos", label: "Fotos", icon: Images },
   { key: "financeiro", label: "Financeiro", icon: Wallet },
   { key: "historico", label: "Histórico", icon: History },
@@ -59,6 +70,9 @@ export default async function AthletePage({
   const openDel = deliverables.filter((d) => d.stage !== "entregue").length;
   const due = orders.filter((o) => o.status === "aberto" || o.status === "parcial").reduce((s, o) => s + o.totalCents - o.paidCents, 0);
   const hasContent = !!(a.bio || a.achievements.length || a.career.length);
+  const accent = a.accent ?? sport.color;
+  const cat = baseCategory(a.birthDate, a.sport);
+  const ready = readiness(a, gallery.length);
 
   return (
     <div>
@@ -68,19 +82,40 @@ export default async function AthletePage({
 
       {/* Cabeçalho */}
       <div className="card mb-5 overflow-hidden">
-        <div className="relative h-28 sm:h-32" style={{ background: `linear-gradient(120deg, ${a.accent ?? sport.color} 0%, #0b1220 85%)` }}>
-          <span className="absolute right-5 top-3 text-5xl opacity-30">{sport.emoji}</span>
+        <div className="relative h-36 overflow-hidden bg-ink-950 sm:h-44" style={{ background: `linear-gradient(115deg, ${accent} 0%, #070b14 62%)` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={sport.image} alt="" className="absolute inset-y-0 right-0 h-full w-3/4 object-cover sm:w-1/2" style={{ maskImage: "linear-gradient(90deg, transparent, black 55%)" }} />
+          <div className="absolute left-5 top-4 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+              <SportIcon sport={sport.slug} className="size-4" /> {sport.name}
+            </span>
+            {cat ? (
+              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur" title="Categoria aproximada pelo ano de nascimento">
+                {cat.label} em {cat.year}
+              </span>
+            ) : null}
+          </div>
+          <div className="absolute bottom-3 right-4 hidden gap-1.5 sm:flex">
+            {[
+              { href: `/cv/${a.slug}`, label: "Currículo", icon: FileText },
+              { href: `/p/${a.slug}`, label: "Portfólio", icon: Globe },
+              { href: `/c/${a.slug}`, label: "Cartão", icon: IdCard },
+            ].map((l) => (
+              <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-black/35 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-black/55">
+                <l.icon className="size-3.5" /> {l.label}
+              </a>
+            ))}
+          </div>
         </div>
         <div className="flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end">
           <div className="-mt-14 flex items-end gap-4">
-            <Avatar name={a.fullName} photoId={a.photoId} size={108} color={sport.color} className="ring-4" />
+            <Avatar name={a.fullName} photoId={a.photoId} size={112} color={sport.color} className="ring-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">{a.nickname ? `${a.nickname}` : a.fullName}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px]">{a.nickname ? `${a.nickname}` : a.fullName}</h1>
             <p className="text-slate-500">
               {a.nickname ? `${a.fullName} · ` : ""}
-              {sport.emoji} {sport.name}
-              {a.position ? ` · ${a.position}` : ""}
+              {a.position || sport.name}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
               {age !== null ? (
@@ -265,6 +300,7 @@ export default async function AthletePage({
           </div>
 
           <div className="space-y-5">
+            <Readiness athleteId={a.id} r={ready} />
             <section className="card card-pad">
               <h2 className="section-title mb-3">Dados</h2>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -339,6 +375,12 @@ export default async function AthletePage({
 
       {tab === "materiais" ? <Materials a={a} /> : null}
 
+      {tab === "artes" ? (
+        <SocialArts athleteId={a.id} hasStats={a.stats.length > 0 || !!(a.sportData?.melhores_marcas || a.sportData?.melhores_tempos)} hasAchievements={a.achievements.length > 0} version={String(a.updatedAt.getTime())} />
+      ) : null}
+
+      {tab === "divulgacao" ? <Outreach athlete={a} /> : null}
+
       {tab === "fotos" ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -356,7 +398,12 @@ export default async function AthletePage({
 
       {tab === "financeiro" ? (
         <div className="space-y-4">
-          <ContractButton athleteId={a.id} packages={packages} services={services} users={users} label="Novo contrato" />
+          <div className="flex flex-wrap gap-2">
+            <ContractButton athleteId={a.id} packages={packages} services={services} users={users} label="Novo contrato" />
+            <a href={`/doc/proposta/${a.id}`} target="_blank" rel="noreferrer" className="btn-ghost">
+              <FileText className="size-4" /> Proposta comercial (PDF)
+            </a>
+          </div>
           {orders.length === 0 ? (
             <div className="card px-6 py-12 text-center text-slate-500">Nenhum contrato ainda.</div>
           ) : (

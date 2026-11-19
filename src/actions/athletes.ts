@@ -110,8 +110,9 @@ export async function setAthleteStatus(id: string, status: string) {
   revalidatePath("/atletas");
 }
 
-export async function setAthleteField(id: string, field: "accent" | "publicEnabled" | "responsibleId", value: string | boolean) {
+export async function setAthleteField(id: string, field: "accent" | "publicEnabled" | "responsibleId" | "portfolioTheme", value: string | boolean) {
   await requireUser();
+  if (field === "responsibleId" && value === "") value = null as unknown as string;
   await db.update(athletes).set({ [field]: value, updatedAt: new Date() }).where(eq(athletes.id, id));
   revalidatePath(`/atletas/${id}`);
 }

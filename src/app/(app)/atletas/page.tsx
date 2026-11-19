@@ -7,6 +7,7 @@ import { ageFrom } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Empty, PageHeader } from "@/components/ui/PageHeader";
+import { SportIcon } from "@/components/ui/SportIcon";
 
 export const metadata = { title: "Atletas" };
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export default async function Atletas({ searchParams }: { searchParams: Promise<
         </Link>
         {SPORTS.map((s) => (
           <Link key={s.slug} href={qs({ esporte: s.slug })} className={`badge shrink-0 border py-1 ${sp.esporte === s.slug ? "border-brand-500 bg-brand-50 text-brand-800" : "border-slate-200 bg-white text-slate-600"}`}>
-            {s.emoji} {s.name}
+            <SportIcon sport={s.slug} className="size-3.5" style={{ color: s.color }} /> {s.name}
           </Link>
         ))}
       </div>
@@ -82,10 +83,14 @@ export default async function Atletas({ searchParams }: { searchParams: Promise<
             const pct = a.deliveriesTotal ? Math.round((a.deliveriesDone / a.deliveriesTotal) * 100) : 0;
             return (
               <Link key={a.id} href={`/atletas/${a.id}`} className="card group overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="relative h-16" style={{ background: `linear-gradient(120deg, ${sport.color}, #0b1220)` }}>
-                  <span className="absolute right-3 top-2 text-2xl opacity-80">{sport.emoji}</span>
+                <div className="relative h-20 overflow-hidden bg-ink-950" style={{ background: `linear-gradient(120deg, ${sport.color}, #070b14 70%)` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sport.image} alt="" className="absolute right-0 top-1/2 h-[180%] w-auto -translate-y-1/2 object-cover opacity-90 transition duration-500 [mask-image:linear-gradient(90deg,transparent,black_45%)] group-hover:scale-105" />
+                  <span className="absolute left-3 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/25 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                    <SportIcon sport={sport.slug} className="size-3.5" /> {sport.name}
+                  </span>
                 </div>
-                <div className="-mt-8 px-4 pb-4">
+                <div className="relative -mt-8 px-4 pb-4">
                   <Avatar name={a.fullName} photoId={a.photoId} size={64} color={sport.color} className="ring-4" />
                   <div className="mt-2 flex items-start justify-between gap-2">
                     <div className="min-w-0">

@@ -9,6 +9,7 @@ import { STAGES } from "@/lib/catalog";
 import { daysUntil, fmtDate } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { FormMessage, Submit } from "@/components/ui/Submit";
+import { SportIcon } from "@/components/ui/SportIcon";
 
 type U = { id: string; name: string; color: string };
 
@@ -101,7 +102,7 @@ export function DeliverableCard({
 }: {
   d: Deliverable;
   users: U[];
-  athlete?: { name: string; id: string; emoji: string };
+  athlete?: { name: string; id: string; sport: string };
   compact?: boolean;
 }) {
   const [edit, setEdit] = useState(false);
@@ -115,8 +116,8 @@ export function DeliverableCard({
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           {athlete ? (
-            <Link href={`/atletas/${athlete.id}?tab=entregas`} className="mb-0.5 block truncate text-xs font-semibold text-brand-700 hover:underline">
-              {athlete.emoji} {athlete.name}
+            <Link href={`/atletas/${athlete.id}?tab=entregas`} className="mb-0.5 flex items-center gap-1 truncate text-xs font-semibold text-brand-700 hover:underline">
+              <SportIcon sport={athlete.sport} className="size-3.5 shrink-0" /> {athlete.name}
             </Link>
           ) : null}
           <p className="text-[15px] font-semibold leading-snug text-ink-900">{d.title}</p>

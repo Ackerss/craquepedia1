@@ -3,7 +3,7 @@ import type { Achievement, Athlete, CareerItem, StatItem } from "@/db/schema";
 import { getSport } from "./sports";
 import { ageFrom, fileUrl, fmtDate, fmtDateEn, fmtPhone, igHandle } from "./utils";
 import { baseUrl, qrSvg } from "./server-utils";
-import { getCompany } from "./data";
+import { getCompany, listGallery } from "./data";
 
 const EN: Record<string, string> = {
   Goleiro: "Goalkeeper",
@@ -88,6 +88,24 @@ export const LABELS = {
     sat: "SAT/ACT",
     guardian: "Responsável",
     highlights: "Destaques",
+    measures: "Medidas",
+    records: "Melhores marcas",
+    coach: "Treinador(a)",
+    competitions: "Competições",
+    fightRecord: "Cartel",
+    wins: "Vitórias",
+    losses: "Derrotas",
+    draws: "Empates",
+    belt: "Graduação",
+    weightClass: "Categoria de peso",
+    team: "Equipe",
+    timeline: "Trajetória",
+    category: "Categoria",
+    event: "Prova",
+    mark: "Marca",
+    gallery: "Galeria",
+    dossier: "Dossiê do atleta",
+    contactUs: "Fale com a gente",
   },
   en: {
     profile: "Profile",
@@ -121,6 +139,24 @@ export const LABELS = {
     sat: "SAT/ACT",
     guardian: "Parent/Guardian",
     highlights: "Highlights",
+    measures: "Measurements",
+    records: "Personal bests",
+    coach: "Coach",
+    competitions: "Competitions",
+    fightRecord: "Record",
+    wins: "Wins",
+    losses: "Losses",
+    draws: "Draws",
+    belt: "Rank",
+    weightClass: "Weight class",
+    team: "Team",
+    timeline: "Career path",
+    category: "Category",
+    event: "Event",
+    mark: "Mark",
+    gallery: "Gallery",
+    dossier: "Athlete dossier",
+    contactUs: "Get in touch",
   },
 } as const;
 
@@ -169,6 +205,53 @@ export type ResumeData = {
   portfolioUrl: string;
   videos: { title: string; url: string }[];
   company: { name: string; whatsapp: string; instagram: string };
+  /* Extras para modelos por modalidade */
+  sportColor: string;
+  sportImage: string;
+  positionKeys: string[];
+  sportData: Record<string, string>;
+  metrics: { label: string; value: string; unit?: string }[];
+  records: RecordItem[];
+  fightRecord: { w: string; l: string; d: string } | null;
+  belt: string;
+  weightClass: string;
+  coach: string;
+  category: string;
+  competitions: string;
+  gallery: string[];
+};
+
+export type RecordItem = { event: string; mark: string; extra?: string };
+
+/** Lê "100m: 10.42s (2024)" / "5K - 17:30 - São Silvestre" em linhas estruturadas. */
+export function parseRecords(txt?: string | null): RecordItem[] {
+  if (!txt) return [];
+  return txt
+    .split(/\n|;/)
+    .map((l) => l.replace(/^[\s•\-*·]+/, "").trim())
+    .filter(Boolean)
+    .map((l) => {
+      let extra: string | undefined;
+      const par = l.match(/\(([^)]+)\)\s*$/);
+      if (par) {
+        extra = par[1];
+        l = l.slice(0, par.index).trim();
+      }
+      const m = l.match(/^(.+?)\s*(?::|\s[-–—]\s|=)\s*(.+)$/);
+      if (!m) return { event: l, mark: "", extra };
+      const [mark, ...rest] = m[2].split(/\s[-–—|]\s/);
+      return { event: m[1].trim(), mark: mark.trim(), extra: [rest.join(" · "), extra].filter(Boolean).join(" · ") || undefined };
+    })
+    .slice(0, 10);
+}
+
+const METRIC_FIELDS: Record<string, { pt: string; en: string; unit?: string }> = {
+  alcance_ataque: { pt: "Alcance ataque", en: "Spike reach", unit: "cm" },
+  alcance_bloqueio: { pt: "Alcance bloqueio", en: "Block reach", unit: "cm" },
+  envergadura: { pt: "Envergadura", en: "Wingspan", unit: "cm" },
+  impulsao: { pt: "Impulsão", en: "Vertical jump", unit: "cm" },
+  velocidade: { pt: "Velocidade", en: "Sprint" },
+  ftp: { pt: "FTP", en: "FTP" },
 };
 
 export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<ResumeData> {
@@ -176,10 +259,11 @@ export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<Re
   const L = LABELS[lang];
   const base = await baseUrl();
   const portfolioUrl = `${base}/p/${a.slug}`;
-  const [qr, qrLight, company] = await Promise.all([qrSvg(portfolioUrl), qrSvg(portfolioUrl, "#ffffff", "#00000000"), getCompany()]);
+  const [qr, qrLight, company, gallery] = await Promise.all([qrSvg(portfolioUrl), qrSvg(portfolioUrl, "#ffffff", "#00000000"), getCompany(), listGallery(a.id)]);
   const age = ageFrom(a.birthDate);
   const en = lang === "en";
   const edu = a.education ?? {};
+  const sd = a.sportData ?? {};
   const education = [
     { label: L.school, value: edu.school ?? "" },
     { label: L.graduation, value: edu.graduationYear ?? "" },
@@ -218,7 +302,7 @@ export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<Re
     stats: a.stats ?? [],
     details: sport.fields
       .filter((f) => a.sportData?.[f.key] && f.type !== "textarea")
-      .map((f) => [en ? f.labelEn : f.label, a.sportData[f.key]] as [string, string]),
+      .map((f) => [(en ? f.labelEn : f.label).replace(/\s*\(.*\)\s*$/, ""), a.sportData[f.key]] as [string, string]),
     education,
     languages: a.languages ?? "",
     phone: fmtPhone(a.phone),
@@ -234,5 +318,33 @@ export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<Re
     portfolioUrl,
     videos: a.videos ?? [],
     company: { name: company.name, whatsapp: company.whatsapp, instagram: company.instagram },
+    sportColor: sport.color,
+    sportImage: sport.image,
+    positionKeys: (a.position ?? "")
+      .split(",")
+      .map((p) => p.trim().toLowerCase())
+      .filter(Boolean),
+    sportData: sd,
+    metrics: [
+      a.heightCm ? { label: en ? "Height" : "Altura", value: en ? String(a.heightCm) : (a.heightCm / 100).toFixed(2).replace(".", ","), unit: en ? "cm" : "m" } : null,
+      a.weightKg ? { label: en ? "Weight" : "Peso", value: String(a.weightKg), unit: "kg" } : null,
+      ...Object.entries(METRIC_FIELDS).map(([k, f]) => {
+        const v = sd[k]?.trim();
+        if (!v) return null;
+        const num = v.replace(/\s*cm$/i, "");
+        return { label: en ? f.en : f.pt, value: f.unit ? num : v, unit: f.unit && /^\d+([.,]\d+)?$/.test(num) ? f.unit : undefined };
+      }),
+    ].filter((x) => !!x) as { label: string; value: string; unit?: string }[],
+    records: parseRecords(sd.melhores_marcas || sd.melhores_tempos),
+    fightRecord: (() => {
+      const m = (sd.cartel ?? "").match(/(\d+)\D+(\d+)(?:\D+(\d+))?/);
+      return m ? { w: m[1], l: m[2], d: m[3] ?? "0" } : null;
+    })(),
+    belt: sd.graduacao ?? "",
+    weightClass: sd.categoria_peso ?? "",
+    coach: sd.treinador ?? "",
+    category: sd.categoria ?? sd.nivel ?? "",
+    competitions: sd.competicoes ?? "",
+    gallery: gallery.filter((g) => g.id !== a.photoId).map((g) => `/api/files/${g.id}`).slice(0, 6),
   };
 }
