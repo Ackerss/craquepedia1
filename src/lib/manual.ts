@@ -24,7 +24,7 @@ export const MANUAL: ManualPhase[] = [
     steps: [
       { text: "Em **Atletas**, clique em **Novo atleta**. Basta nome, esporte e WhatsApp. Em **Status**, escolha **Negociando**." },
       { text: "Abra o atleta e vá na aba **Financeiro**. Clique em **Proposta comercial (PDF)**." },
-      { text: "Na proposta, clique em **Baixar PDF da proposta** (escolha “Salvar como PDF”). Mande pelo WhatsApp junto com uma mensagem curta." },
+      { text: "Na proposta, clique em **Enviar link no WhatsApp**: o atleta abre a proposta no celular, sem precisar de PDF. Se preferir o arquivo, use **Baixar PDF da proposta**." },
     ],
     images: [
       { src: "/manual/01-financeiro.webp", caption: "Aba Financeiro do atleta: o botão da proposta fica no topo." },
@@ -42,7 +42,8 @@ export const MANUAL: ManualPhase[] = [
     steps: [
       { text: "Na página do atleta, aba **Financeiro**, clique em **Novo contrato** (ou em **Contratar serviços**, na aba Entregas). Escolha o **pacote** (ou serviços avulsos), o valor e quanto já foi pago." },
       { text: "Confirme. As entregas aparecem na aba **Entregas** e na tela geral **Entregas**, cada uma com prazo e checklist." },
-      { text: "Quando o dinheiro cair, use **Registrar pagamento** no contrato. Clique em **recibo**, ao lado do pagamento, para gerar o recibo em PDF." },
+      { text: "Quando o dinheiro cair, use **Registrar pagamento** no contrato. Clique em **recibo**, ao lado do pagamento, e depois em **Enviar no WhatsApp**: o atleta recebe o link do recibo." },
+      { text: "Lançou errado? Apague o pagamento na **lixeira** ao lado dele, ou ajuste o valor do contrato no **lápis** (desconto, mudança de pacote). O sistema recalcula sozinho." },
       { text: "Mude o status do atleta para **Ativo**.", tip: "Preços e pacotes se mudam em Configurações → Pacotes / Serviços." },
     ],
     images: [{ src: "/manual/03-contratar.webp", caption: "Contratar serviços: escolha o pacote e as entregas são criadas automaticamente." }],
@@ -58,7 +59,8 @@ export const MANUAL: ManualPhase[] = [
     steps: [
       { text: "Vá em **Formulários** e clique em **Novo link de formulário**. Informe nome, WhatsApp e esporte. Se o pacote já está fechado, escolha-o: as entregas são criadas quando ele responder." },
       { text: "Clique em **Gerar link** e depois em **Enviar no WhatsApp**: a mensagem já vai pronta com o link." },
-      { text: "Quando o atleta enviar, ele aparece no **Painel** em **Formulários recebidos**. Em cerca de 1 minuto a IA organiza o perfil e faz a revisão sozinha." },
+      { text: "Quando o atleta enviar, ele aparece no **Painel** em **Formulários recebidos** com a etiqueta **Novo**. Em cerca de 1 minuto a IA organiza o perfil e faz a revisão sozinha." },
+      { text: "O atleta não respondeu? Em **Formulários**, o botão **Lembrar** abre o WhatsApp com um lembrete pronto.", tip: "Se o atleta fechar o formulário no meio, o que ele já digitou fica salvo no celular dele." },
     ],
     images: [
       { src: "/manual/04-formularios.webp", caption: "Formulários: crie o link e mande pelo WhatsApp." },
@@ -76,7 +78,7 @@ export const MANUAL: ManualPhase[] = [
     steps: [
       { text: "Abra o atleta e confira a aba **Perfil**. Se os dados vieram por fora (áudio, conversa), use **Organizar com IA**: ela escreve a bio em português e inglês e organiza carreira, conquistas e números." },
       { text: "Veja o medidor **Perfil pronto para materiais**. Cada item que falta é um atalho: clique e complete." },
-      { text: "Faltou algo do atleta? Use **Pedir dados ao atleta**: abre o WhatsApp com a lista do que falta." },
+      { text: "Faltou algo do atleta? Use **Pedir dados ao atleta**: abre o WhatsApp com a lista do que falta. O formulário já chega preenchido com o que temos; ele só completa." },
       { text: "Na aba **Fotos**, escolha a foto principal (rosto, fundo limpo), a capa (horizontal, em ação) e a galeria." },
     ],
     images: [{ src: "/manual/06-perfil.webp", caption: "Página do atleta: Organizar com IA, abas e o medidor de perfil pronto." }],
@@ -107,6 +109,7 @@ export const MANUAL: ManualPhase[] = [
     goal: "Gerar os materiais com um clique e acompanhar cada entrega até ficar pronta.",
     steps: [
       { text: "Aba **Materiais**: escolha o modelo de currículo (os recomendados para o esporte aparecem primeiro), em **PT** ou **EN**, e clique em **Baixar PDF**." },
+      { text: "Clique na **★** do modelo preferido para torná-lo o **currículo oficial**: é ele que abre no link público que vai para clubes e olheiros (sem a lista de modelos, só idioma e download)." },
       { text: "Ainda em Materiais, escolha o **tema do portfólio** (site do atleta) e copie os links do portfólio e do cartão digital." },
       { text: "Aba **Artes**: baixe o post e o story para o Instagram já com foto, números e QR code." },
       { text: "Na tela **Entregas**, vá clicando em **Mover para…** em cada cartão: A fazer → Em produção → Revisão → Entregue. Marque o checklist de cada uma." },
@@ -126,9 +129,10 @@ export const MANUAL: ManualPhase[] = [
     icon: "entrega",
     goal: "Entregar tudo de uma vez, de forma profissional, e fechar o financeiro.",
     steps: [
-      { text: "No cartão da entrega, clique no **lápis** e cole o **link do material** (Drive, YouTube…). Depois clique em **Mover para Entregue**." },
+      { text: "Currículo, cartão e portfólio já têm o link pronto no cartão da entrega (**abrir**). Para vídeo e artes, clique no **lápis** e cole o link (Drive, YouTube…)." },
+      { text: "Na etapa **Revisão**, use **enviar ao atleta**: abre o WhatsApp com a mensagem e o link do material. Depois clique em **Mover para Entregue**." },
       { text: "Na aba **Perfil**, em **Textos prontos com IA**, gere a **WhatsApp de entrega** e mande com os links (currículo, portfólio, cartão e artes)." },
-      { text: "Se houver saldo, cobre e use **Registrar pagamento**. Envie o **recibo** em PDF." },
+      { text: "Se houver saldo, use **Cobrar** (a mensagem já leva a chave Pix das Configurações) e depois **Registrar pagamento**. Envie o **recibo** pelo link." },
     ],
     images: [{ src: "/manual/11-textos.webp", caption: "Textos prontos com IA: mensagem de entrega, legenda, e-mail para clubes e mais." }],
     link: { href: "/entregas", label: "Abrir Entregas" },
@@ -143,7 +147,7 @@ export const MANUAL: ManualPhase[] = [
     steps: [
       { text: "Em **Contatos**, cadastre clubes, olheiros e universidades com os esportes de interesse." },
       { text: "No atleta, aba **Divulgação**: o sistema sugere os contatos do esporte. Escolha, abra a mensagem pronta (português ou inglês) e envie." },
-      { text: "O envio fica registrado e, 7 dias depois, aparece no Painel em **Cobrar retorno de clubes**. Atualize o status: respondeu, interessado, teste…" },
+      { text: "O envio fica registrado e, 7 dias depois, aparece no Painel em **Cobrar retorno de clubes**, com a mensagem de cobrança pronta no WhatsApp, **adiar 7 dias** ou **sem retorno**. Atualize o status: respondeu, interessado, teste…" },
     ],
     images: [{ src: "/manual/12-divulgacao.webp", caption: "Divulgação: contatos sugeridos e histórico de envios do atleta." }],
     link: { href: "/contatos", label: "Abrir Contatos" },
@@ -171,6 +175,14 @@ export const MANUAL_FAQ: { q: string; a: string }[] = [
   {
     q: "Mudei a foto ou um dado. Preciso refazer o currículo?",
     a: "Não. Currículo, portfólio, cartão e artes são gerados na hora a partir do perfil. Só baixe o PDF de novo. Rode a revisão de novo se mudou textos.",
+  },
+  {
+    q: "Dá para tirar uma planilha com tudo?",
+    a: "Sim. Os botões **Planilha** em Atletas e Contatos, e **Exportar planilha** no Financeiro, baixam um arquivo que abre no Excel ou no Google Planilhas. Serve também como cópia de segurança.",
+  },
+  {
+    q: "O que aparece no Painel?",
+    a: "Entregas atrasadas e dos próximos 3 dias, formulários novos, retornos de clubes para cobrar, **aniversários da semana** (com mensagem de parabéns pronta) e atletas **em negociação** com atalho para a proposta.",
   },
   {
     q: "Como crio o acesso do Diego?",

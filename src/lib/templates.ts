@@ -49,3 +49,9 @@ export function templatesFor(sport: string) {
   const others = RESUME_TEMPLATES.filter((t) => t.sports && !t.sports.includes(sport));
   return { recommended: rec, general: rest, others };
 }
+
+/** Modelo "oficial" do atleta: o escolhido pela equipe ou, se nenhum, o primeiro recomendado para a modalidade. */
+export function officialTemplate(a: { resumeTemplate?: string | null; sport: string }) {
+  if (a.resumeTemplate && RESUME_TEMPLATES.some((t) => t.id === a.resumeTemplate)) return getTemplate(a.resumeTemplate);
+  return templatesFor(a.sport).recommended[0] ?? RESUME_TEMPLATES[0];
+}

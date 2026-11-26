@@ -143,3 +143,15 @@ export const ORDER_STATUS = [
   { key: "pago", label: "Pago", color: "#16a34a" },
   { key: "cancelado", label: "Cancelado", color: "#64748b" },
 ] as const;
+
+/** Página pública gerada automaticamente para cada serviço (para abrir e enviar ao atleta). */
+export function materialPath(serviceKey: string, slug?: string | null) {
+  if (!slug) return null;
+  const map: Record<string, string> = {
+    curriculo: `/cv/${slug}`,
+    curriculo_en: `/cv/${slug}?lang=en`,
+    cartao: `/c/${slug}`,
+    portfolio: `/p/${slug}`,
+  };
+  return map[serviceKey] ?? null;
+}

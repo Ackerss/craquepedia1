@@ -112,7 +112,9 @@ export function Gallery({
             <button type="button" title="Usar como capa do portfólio" onClick={() => start(() => setMainPhoto(athleteId, f.id, "cover"))} className="rounded-lg bg-white/90 p-1.5 text-ink-900 hover:bg-white">
               <ImageIcon className="size-4" />
             </button>
-            <button type="button" title="Excluir" onClick={() => start(() => deleteFile(athleteId, f.id))} className="rounded-lg bg-white/90 p-1.5 text-red-600 hover:bg-white">
+            <button type="button" title="Excluir" onClick={() => {
+                if (confirm("Excluir esta foto?")) start(() => deleteFile(athleteId, f.id));
+              }} className="rounded-lg bg-white/90 p-1.5 text-red-600 hover:bg-white">
               <Trash2 className="size-4" />
             </button>
           </div>

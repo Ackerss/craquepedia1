@@ -5,13 +5,14 @@ import { getCompany, listContacts, listOutreachForAthlete } from "@/lib/data";
 import { baseUrl } from "@/lib/server-utils";
 import { getSport } from "@/lib/sports";
 import { OUTREACH_STATUS } from "@/lib/outreach";
-import { ageFrom } from "@/lib/utils";
+import { ageFrom, firstName, fmtDate, todayISO } from "@/lib/utils";
 import { ContactButton } from "@/components/contacts/ContactForm";
 import { OutreachRow, SendMaterial } from "./OutreachClient";
 
 export async function Outreach({ athlete: a }: { athlete: Athlete }) {
   const [history, contacts, company, base] = await Promise.all([listOutreachForAthlete(a.id), listContacts(), getCompany(), baseUrl()]);
   const sport = getSport(a.sport);
+  const today = todayISO();
   const sentTo = new Set(history.map((h) => h.c.id));
   const ordered = [...contacts].sort((x, y) => Number(y.c.sports.includes(a.sport)) - Number(x.c.sports.includes(a.sport)));
   const counts = OUTREACH_STATUS.map((s) => ({ ...s, n: history.filter((h) => h.o.status === s.key).length }));
@@ -40,7 +41,14 @@ export async function Outreach({ athlete: a }: { athlete: Athlete }) {
           {history.length ? (
             <ul className="divide-y divide-slate-100">
               {history.map(({ o, c }) => (
-                <OutreachRow key={o.id} o={o} c={c} athleteId={a.id} />
+                <OutreachRow
+                  key={o.id}
+                  o={o}
+                  c={c}
+                  athleteId={a.id}
+                  due={!!o.followUpAt && o.followUpAt <= today}
+                  followMsg={`Olá ${firstName(c.name)}, tudo bem? Aqui é da ${company.name}. Passando para saber se conseguiu ver o material do(a) atleta ${a.fullName} que enviei em ${fmtDate(o.sentAt)}.\n\nPortfólio: ${base}/p/${a.slug}\n\nFico à disposição!`}
+                />
               ))}
             </ul>
           ) : (

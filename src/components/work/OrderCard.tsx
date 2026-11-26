@@ -1,18 +1,20 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Ban, HandCoins } from "lucide-react";
+import { Ban, HandCoins, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import type { Order, Payment } from "@/db/schema";
-import { addPayment, cancelOrder } from "@/actions/work";
+import { addPayment, cancelOrder, deletePayment, updateOrderTotal } from "@/actions/work";
 import { ORDER_STATUS } from "@/lib/catalog";
-import { brl, fmtDate, todayISO } from "@/lib/utils";
+import { brl, fmtDate, todayISO, waLink } from "@/lib/utils";
+import { chargeMessage } from "@/lib/messages";
+import { keepValues } from "@/lib/form-submit";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { FormMessage, Submit } from "@/components/ui/Submit";
 
 export function PaymentButton({ order, small = false }: { order: Order; small?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [state, action] = useActionState(async (p: unknown, fd: FormData) => {
+  const [state, action, isPending] = useActionState(async (p: unknown, fd: FormData) => {
     const r = await addPayment(order.id, p, fd);
     if (r?.ok) setOpen(false);
     return r;
@@ -24,7 +26,7 @@ export function PaymentButton({ order, small = false }: { order: Order; small?: 
         <HandCoins className="size-4" /> Registrar pagamento
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title={`Pagamento — ${order.title}`}>
-        <form action={action} className="space-y-3">
+        <form onSubmit={keepValues(action)} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Valor (R$)</label>
@@ -46,16 +48,48 @@ export function PaymentButton({ order, small = false }: { order: Order; small?: 
             </select>
           </div>
           <FormMessage state={state as { error?: string } | null} />
-          <Submit className="btn-primary w-full">Registrar</Submit>
+          <Submit pending={isPending} pendingText="Registrando..." className="btn-primary w-full">Registrar</Submit>
         </form>
       </Modal>
     </>
   );
 }
 
-export function OrderCard({ order, payments }: { order: Order; payments: Payment[] }) {
+function EditOrder({ order, open, onClose }: { order: Order; open: boolean; onClose: () => void }) {
+  const [state, action, isPending] = useActionState(async (p: unknown, fd: FormData) => {
+    const r = await updateOrderTotal(order.id, p, fd);
+    if (r?.ok) onClose();
+    return r;
+  }, null);
+  return (
+    <Modal open={open} onClose={onClose} title={`Ajustar contrato — ${order.title}`}>
+      <form onSubmit={keepValues(action)} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Valor total (R$)</label>
+            <input name="total" className="input" inputMode="decimal" defaultValue={(order.totalCents / 100).toFixed(2).replace(".", ",")} />
+          </div>
+          <div>
+            <label className="label">Vencimento</label>
+            <input name="dueDate" type="date" className="input" defaultValue={order.dueDate ?? ""} />
+          </div>
+        </div>
+        <div>
+          <label className="label">Observação</label>
+          <input name="notes" className="input" defaultValue={order.notes ?? ""} />
+        </div>
+        <FormMessage state={state as { error?: string } | null} />
+        <Submit pending={isPending} className="btn-primary w-full">Salvar</Submit>
+      </form>
+    </Modal>
+  );
+}
+
+export function OrderCard({ order, payments, athlete, pix }: { order: Order; payments: Payment[]; athlete?: { name: string; phone?: string | null }; pix?: string }) {
   const st = ORDER_STATUS.find((s) => s.key === order.status);
   const [pending, start] = useTransition();
+  const [edit, setEdit] = useState(false);
+  const remaining = Math.max(0, order.totalCents - order.paidCents);
   const pct = order.totalCents ? Math.min(100, Math.round((order.paidCents / order.totalCents) * 100)) : 100;
   return (
     <div className="rounded-2xl border border-slate-200 p-4">
@@ -67,8 +101,16 @@ export function OrderCard({ order, payments }: { order: Order; payments: Payment
             {order.dueDate ? ` · vence ${fmtDate(order.dueDate)}` : ""}
           </p>
         </div>
-        {st ? <Badge color={st.color}>{st.label}</Badge> : null}
+        <div className="flex items-center gap-1">
+          {st ? <Badge color={st.color}>{st.label}</Badge> : null}
+          {order.status !== "cancelado" ? (
+            <button type="button" onClick={() => setEdit(true)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Ajustar contrato" title="Ajustar valor / vencimento">
+              <Pencil className="size-4" />
+            </button>
+          ) : null}
+        </div>
       </div>
+      {order.notes ? <p className="mt-1 text-sm text-slate-500">{order.notes}</p> : null}
       <div className="mt-3 flex items-end justify-between text-sm">
         <span className="text-slate-500">
           Recebido <b className="text-ink-900">{brl(order.paidCents)}</b> de {brl(order.totalCents)}
@@ -90,6 +132,18 @@ export function OrderCard({ order, payments }: { order: Order; payments: Payment
                 <a href={`/doc/recibo/${p.id}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-ink-900 hover:underline">
                   recibo
                 </a>
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="rounded p-0.5 text-slate-300 hover:text-red-600"
+                  aria-label="Apagar pagamento"
+                  title="Apagar pagamento lançado errado"
+                  onClick={() => {
+                    if (confirm(`Apagar o pagamento de ${brl(p.amountCents)} de ${fmtDate(p.paidAt)}? O contrato é recalculado.`)) start(() => deletePayment(p.id));
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
               </span>
             </li>
           ))}
@@ -98,11 +152,24 @@ export function OrderCard({ order, payments }: { order: Order; payments: Payment
       {order.status !== "pago" && order.status !== "cancelado" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <PaymentButton order={order} />
-          <button type="button" className="btn-ghost btn-sm" disabled={pending} onClick={() => start(() => cancelOrder(order.id))}>
+          {athlete?.phone && remaining > 0 ? (
+            <a className="btn-ghost btn-sm" target="_blank" rel="noreferrer" href={waLink(athlete.phone, chargeMessage(athlete.name, remaining, order.title, pix))}>
+              <MessageCircle className="size-4" /> Cobrar
+            </a>
+          ) : null}
+          <button
+            type="button"
+            className="btn-ghost btn-sm ml-auto text-slate-500"
+            disabled={pending}
+            onClick={() => {
+              if (confirm(`Cancelar "${order.title}"? As entregas desse contrato que ainda não começaram saem do quadro.`)) start(() => cancelOrder(order.id));
+            }}
+          >
             <Ban className="size-4" /> Cancelar
           </button>
         </div>
       ) : null}
+      <EditOrder order={order} open={edit} onClose={() => setEdit(false)} />
     </div>
   );
 }

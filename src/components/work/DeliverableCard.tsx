@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
-import { CalendarDays, CheckSquare, ChevronRight, ExternalLink, Pencil, Square, Trash2 } from "lucide-react";
+import { CalendarDays, CheckSquare, ChevronRight, ExternalLink, MessageCircle, Pencil, Square, Trash2 } from "lucide-react";
 import type { Deliverable } from "@/db/schema";
 import { deleteDeliverable, moveDeliverable, toggleChecklistItem, updateDeliverable } from "@/actions/work";
-import { STAGES } from "@/lib/catalog";
-import { daysUntil, fmtDate } from "@/lib/utils";
+import { materialPath, STAGES } from "@/lib/catalog";
+import { daysUntil, firstName, fmtDate, waLink } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { FormMessage, Submit } from "@/components/ui/Submit";
+import { keepValues } from "@/lib/form-submit";
 import { SportIcon } from "@/components/ui/SportIcon";
 
 type U = { id: string; name: string; color: string };
@@ -32,17 +33,15 @@ export function DueBadge({ date, done }: { date?: string | null; done?: boolean 
 }
 
 export function EditDeliverable({ d, users, open, onClose }: { d: Deliverable; users: U[]; open: boolean; onClose: () => void }) {
-  const [state, action] = useActionState(updateDeliverable.bind(null, d.id), null);
+  const [state, action, isPending] = useActionState(async (prev: unknown, fd: FormData) => {
+    const r = await updateDeliverable(d.id, prev, fd);
+    if (r?.ok) onClose();
+    return r;
+  }, null);
   const [pending, start] = useTransition();
   return (
     <Modal open={open} onClose={onClose} title="Editar entrega">
-      <form
-        action={async (fd) => {
-          await action(fd);
-          onClose();
-        }}
-        className="space-y-3"
-      >
+      <form onSubmit={keepValues(action)} className="space-y-3">
         <div>
           <label className="label">Título</label>
           <input name="title" defaultValue={d.title} className="input" />
@@ -84,10 +83,21 @@ export function EditDeliverable({ d, users, open, onClose }: { d: Deliverable; u
         </div>
         <FormMessage state={state as { error?: string } | null} />
         <div className="flex justify-between gap-2 pt-2">
-          <button type="button" className="btn-danger btn-sm" disabled={pending} onClick={() => start(async () => { await deleteDeliverable(d.id); onClose(); })}>
+          <button
+            type="button"
+            className="btn-danger btn-sm"
+            disabled={pending}
+            onClick={() => {
+              if (confirm(`Excluir a entrega "${d.title}"?`))
+                start(async () => {
+                  await deleteDeliverable(d.id);
+                  onClose();
+                });
+            }}
+          >
             <Trash2 className="size-4" /> Excluir
           </button>
-          <Submit>Salvar</Submit>
+          <Submit pending={isPending}>Salvar</Submit>
         </div>
       </form>
     </Modal>
@@ -99,11 +109,13 @@ export function DeliverableCard({
   users,
   athlete,
   compact = false,
+  showAthlete = true,
 }: {
   d: Deliverable;
   users: U[];
-  athlete?: { name: string; id: string; sport: string };
+  athlete?: { name: string; id: string; sport: string; slug?: string; phone?: string | null; fullName?: string };
   compact?: boolean;
+  showAthlete?: boolean;
 }) {
   const [edit, setEdit] = useState(false);
   const [pending, start] = useTransition();
@@ -111,11 +123,20 @@ export function DeliverableCard({
   const idx = STAGES.findIndex((s) => s.key === d.stage);
   const next = STAGES[idx + 1];
   const done = d.checklist.filter((c) => c.done).length;
+  // material gerado automaticamente (currículo, cartão, portfólio) ou o link colado na entrega
+  const material = d.link || materialPath(d.serviceKey, athlete?.slug);
+  const canNotify = !!athlete?.phone && !!material && (d.stage === "revisao" || d.stage === "entregue");
+  const notify = () => {
+    if (!athlete?.phone || !material) return;
+    const url = material.startsWith("/") ? window.location.origin + material : material;
+    const msg = `Oi ${firstName(athlete.fullName || athlete.name)}! 🙌 Seu material está pronto: *${d.title}*\n${url}\n\nDá uma olhada e me fala se quer ajustar alguma coisa!`;
+    window.open(waLink(athlete.phone, msg), "_blank", "noopener");
+  };
   return (
     <div className={`rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition ${pending ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          {athlete ? (
+          {athlete && showAthlete ? (
             <Link href={`/atletas/${athlete.id}?tab=entregas`} className="mb-0.5 flex items-center gap-1 truncate text-xs font-semibold text-brand-700 hover:underline">
               <SportIcon sport={athlete.sport} className="size-3.5 shrink-0" /> {athlete.name}
             </Link>
@@ -138,10 +159,15 @@ export function DeliverableCard({
             <CheckSquare className="size-3" /> {done}/{d.checklist.length}
           </span>
         ) : null}
-        {d.link ? (
-          <a href={d.link} target="_blank" rel="noreferrer" className="badge bg-blue-50 text-blue-700">
-            <ExternalLink className="size-3" /> link
+        {material ? (
+          <a href={material} target="_blank" rel="noreferrer" className="badge bg-blue-50 text-blue-700" title="Abrir o material">
+            <ExternalLink className="size-3" /> abrir
           </a>
+        ) : null}
+        {canNotify ? (
+          <button type="button" onClick={notify} className="badge bg-[#25D366]/15 text-[#128C7E] hover:bg-[#25D366]/25" title="Enviar o material ao atleta pelo WhatsApp">
+            <MessageCircle className="size-3" /> enviar ao atleta
+          </button>
         ) : null}
       </div>
       {!compact && d.checklist.length ? (

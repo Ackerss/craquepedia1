@@ -11,7 +11,7 @@ import { aiAvailable, enrichAthlete, reviewAthlete } from "@/lib/ai";
 import { getAthlete, logActivity, ready, uniqueSlug } from "@/lib/data";
 import { getSport } from "@/lib/sports";
 import { createDeliverablesFor } from "@/lib/work";
-import { int, str } from "@/lib/utils";
+import { fmtDate, int, str } from "@/lib/utils";
 
 export async function createIntake(_: unknown, form: FormData) {
   const s = await requireUser();
@@ -124,7 +124,18 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
       }),
     );
     const current = await getAthlete(athleteId);
-    if (filled.notes && current?.notes) filled.notes = `${current.notes}\n\n--- Atualização do atleta ---\n${filled.notes}`;
+    // textos já revisados pela equipe/IA não são trocados pelo texto cru do atleta (o texto novo vai para as observações)
+    const extra: string[] = [];
+    for (const k of ["bio", "playingStyle"] as const) {
+      if (filled[k] && current?.[k] && current[k] !== filled[k]) {
+        extra.push(`${k === "bio" ? "Sobre o atleta" : "Estilo de jogo"} (texto do atleta): ${filled[k]}`);
+        delete filled[k];
+      }
+    }
+    // dados de carreira digitados de novo pelo atleta entram como observação, sem apagar as listas organizadas
+    const notesNew = [filled.notes, ...extra].filter(Boolean).join("\n\n");
+    if (notesNew) filled.notes = current?.notes ? `${current.notes}\n\n--- Atualização do atleta (${fmtDate(new Date())}) ---\n${notesNew}` : notesNew;
+    if (current?.status && current.status !== "lead") delete filled.status;
     await db.update(athletes).set({ ...filled, updatedAt: new Date() }).where(eq(athletes.id, athleteId));
   } else {
     const slug = await uniqueSlug(values.nickname ? `${values.nickname} ${fullName.split(" ").slice(-1)[0]}` : fullName);
@@ -178,7 +189,10 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
   after(async () => {
     try {
       const a = await getAthlete(aid);
-      if (!a || !(await aiAvailable())) return;
+      if (!a || !(await aiAvailable())) {
+        await db.update(intakes).set({ status: "processado" }).where(eq(intakes.id, intake.id));
+        return;
+      }
       const e = await enrichAthlete(a, raw);
       await db
         .update(athletes)
@@ -208,6 +222,8 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
       }
     } catch (err) {
       console.error("[intake ai]", err);
+      await db.update(intakes).set({ status: "processado" }).where(eq(intakes.id, intake.id)).catch(() => {});
+      await logActivity("ia", `A IA não conseguiu organizar o formulário: ${String((err as Error)?.message ?? err).slice(0, 140)}. Use "Organizar com IA" no perfil.`, aid, null).catch(() => {});
     }
   });
 

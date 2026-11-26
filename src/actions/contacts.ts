@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { contacts, outreach } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { getAthlete, logActivity } from "@/lib/data";
-import { str, todayISO } from "@/lib/utils";
+import { addDaysISO, str, todayISO } from "@/lib/utils";
 
 function contactFromForm(form: FormData) {
   return {
@@ -46,8 +46,6 @@ export async function logOutreach(athleteId: string, contactIds: string[], chann
   const s = await requireUser();
   if (!contactIds.length) return { error: "Escolha pelo menos um contato." };
   const today = todayISO();
-  const follow = new Date(today + "T12:00:00");
-  follow.setDate(follow.getDate() + 7);
   await db.insert(outreach).values(
     contactIds.map((contactId) => ({
       athleteId,
@@ -55,7 +53,7 @@ export async function logOutreach(athleteId: string, contactIds: string[], chann
       channel,
       notes: notes || null,
       sentAt: today,
-      followUpAt: follow.toISOString().slice(0, 10),
+      followUpAt: addDaysISO(today, 7),
       userId: s.uid,
     })),
   );
@@ -88,5 +86,13 @@ export async function deleteOutreach(id: string, athleteId: string) {
   await requireUser();
   await db.delete(outreach).where(eq(outreach.id, id));
   revalidatePath(`/atletas/${athleteId}`);
+  revalidatePath("/contatos");
+}
+
+/** Empurra a cobrança de retorno para daqui a alguns dias. */
+export async function snoozeOutreach(id: string, days = 7) {
+  await requireUser();
+  await db.update(outreach).set({ followUpAt: todayISO(days), updatedAt: new Date() }).where(eq(outreach.id, id));
+  revalidatePath("/");
   revalidatePath("/contatos");
 }

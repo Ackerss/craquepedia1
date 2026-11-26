@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Wallet } from "lucide-react";
-import { listOrders, listPaymentsSince } from "@/lib/data";
+import { Download, FileText, MessageCircle, Wallet } from "lucide-react";
+import { getCompany, listOrders, listPaymentsSince } from "@/lib/data";
+import { chargeMessage } from "@/lib/messages";
 import { ORDER_STATUS } from "@/lib/catalog";
-import { brl, daysUntil, fmtDate, todayISO, waLink, firstName } from "@/lib/utils";
+import { brl, daysUntil, fmtDate, isoInTZ, todayISO, waLink } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Empty, PageHeader } from "@/components/ui/PageHeader";
 import { PaymentButton } from "@/components/work/OrderCard";
@@ -13,26 +14,38 @@ export const dynamic = "force-dynamic";
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 export default async function Financeiro() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
-  const [orders, pays] = await Promise.all([listOrders(), listPaymentsSince(start)]);
-  const monthKey = todayISO().slice(0, 7);
+  const today = todayISO();
+  const [cy, cm] = today.split("-").map(Number);
+  const monthOf = (back: number) => {
+    const d = new Date(Date.UTC(cy, cm - 1 - back, 1));
+    return { key: d.toISOString().slice(0, 7), month: d.getUTCMonth() };
+  };
+  const start = monthOf(5).key + "-01";
+  const [orders, pays, company] = await Promise.all([listOrders(), listPaymentsSince(start), getCompany()]);
+  const monthKey = today.slice(0, 7);
   const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return { key, label: MONTHS[d.getMonth()], total: pays.filter((p) => p.p.paidAt.startsWith(key)).reduce((s, p) => s + p.p.amountCents, 0) };
+    const { key, month } = monthOf(5 - i);
+    return { key, label: MONTHS[month], total: pays.filter((p) => p.p.paidAt.startsWith(key)).reduce((s, p) => s + p.p.amountCents, 0) };
   });
   const max = Math.max(1, ...months.map((m) => m.total));
   const receivedMonth = months[5].total;
   const open = orders.filter((o) => o.o.status === "aberto" || o.o.status === "parcial");
   const toReceive = open.reduce((s, o) => s + o.o.totalCents - o.o.paidCents, 0);
-  const soldMonth = orders.filter((o) => o.o.status !== "cancelado" && o.o.createdAt.toISOString().startsWith(monthKey));
+  const soldMonth = orders.filter((o) => o.o.status !== "cancelado" && isoInTZ(o.o.createdAt).startsWith(monthKey));
   const valid = orders.filter((o) => o.o.status !== "cancelado");
   const ticket = valid.length ? valid.reduce((s, o) => s + o.o.totalCents, 0) / valid.length : 0;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Financeiro" subtitle="Contratos, recebimentos e quem ainda falta pagar." />
+      <PageHeader
+        title="Financeiro"
+        subtitle="Contratos, recebimentos e quem ainda falta pagar."
+        actions={
+          <a href="/api/exportar?tipo=financeiro" className="btn-ghost">
+            <Download className="size-4" /> Exportar planilha
+          </a>
+        }
+      />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ["Recebido no mês", brl(receivedMonth), "text-brand-700"],
@@ -83,13 +96,8 @@ export default async function Financeiro() {
                     </div>
                     {n !== null && n < 0 ? <Badge color="#dc2626">vencido</Badge> : null}
                     {athletePhone ? (
-                      <a
-                        className="btn-ghost btn-sm"
-                        target="_blank"
-                        rel="noreferrer"
-                        href={waLink(athletePhone, `Oi ${firstName(athleteName)}! Tudo bem? Passando para lembrar do pagamento de ${brl(remaining)} referente a ${o.title}. Qualquer dúvida estou à disposição! 🙏`)}
-                      >
-                        Cobrar no WhatsApp
+                      <a className="btn-ghost btn-sm" target="_blank" rel="noreferrer" href={waLink(athletePhone, chargeMessage(athleteName, remaining, o.title, company.pix))}>
+                        <MessageCircle className="size-4" /> Cobrar
                       </a>
                     ) : null}
                     <PaymentButton order={o} small />
@@ -100,6 +108,26 @@ export default async function Financeiro() {
           )}
         </section>
       </div>
+
+      {pays.length ? (
+        <section className="card">
+          <h2 className="border-b border-slate-100 px-5 py-4 font-semibold">Últimos recebimentos</h2>
+          <ul className="divide-y divide-slate-100">
+            {pays.slice(0, 8).map(({ p, title, athleteName, athleteId }) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-3 px-5 py-2.5 text-sm">
+                <span className="w-20 shrink-0 text-slate-500">{fmtDate(p.paidAt)}</span>
+                <Link href={`/atletas/${athleteId}?tab=financeiro`} className="min-w-0 flex-1 truncate font-medium hover:underline">
+                  {athleteName} <span className="font-normal text-slate-500">· {title}{p.method ? ` · ${p.method}` : ""}</span>
+                </Link>
+                <span className="font-semibold text-brand-700">+ {brl(p.amountCents)}</span>
+                <a href={`/doc/recibo/${p.id}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
+                  <FileText className="size-4" /> Recibo
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="card">
         <h2 className="border-b border-slate-100 px-5 py-4 font-semibold">Todos os contratos</h2>

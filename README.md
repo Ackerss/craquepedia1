@@ -21,9 +21,11 @@ No primeiro acesso, a tela de login pede para criar o usuário administrador.
 Depois de mudar `src/db/schema.ts`: `npm run db:generate` (gera a migração e embute no código).
 
 ## Páginas públicas
-`/f/[token]` formulário do atleta · `/cv/[slug]` currículo (`?m=modelo&lang=en`) · `/c/[slug]` cartão · `/p/[slug]` portfólio (`?tema=arena|impacto|editorial`).
+`/f/[token]` formulário do atleta (salva rascunho no celular; vem preenchido quando é atualização) · `/cv/[slug]` currículo (abre o modelo **oficial** do atleta; `?m=modelo&lang=en`) · `/c/[slug]` cartão · `/p/[slug]` portfólio (`?tema=arena|impacto|editorial`) · `/r/[pagamento]` recibo · `/proposta/[atleta]` proposta comercial.
 
-Internas: `/api/arte/[id]?tipo=apresentacao|numeros|conquistas|vitrine&fmt=post|story` (PNG), `/doc/recibo/[pagamento]`, `/doc/proposta/[atleta]`.
+Internas: `/api/arte/[id]?tipo=apresentacao|numeros|conquistas|vitrine&fmt=post|story` (PNG), `/doc/recibo/[pagamento]`, `/doc/proposta/[atleta]`, `/api/exportar?tipo=atletas|financeiro|contatos` (planilha CSV).
+
+Datas: tudo calculado no fuso de Brasília (`TZ` em `src/lib/utils.ts`), porque o servidor da Vercel roda em UTC.
 
 Imagens dos esportes: `public/sports/*.jpg` (mesmo tratamento de cor para todas). Ícones: `src/components/ui/SportIcon.tsx`.
 

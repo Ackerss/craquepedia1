@@ -49,5 +49,14 @@ export const MIGRATIONS: { name: string; statements: string[] }[] = [
       "ALTER TABLE \"athletes\" ADD COLUMN \"ai_review\" jsonb;",
       "ALTER TABLE \"athletes\" ADD COLUMN \"ai_reviewed_at\" timestamp with time zone;"
     ]
+  },
+  {
+    "name": "0003_rare_solo",
+    "statements": [
+      "ALTER TABLE \"athletes\" ADD COLUMN \"resume_template\" text;",
+      "ALTER TABLE \"intakes\" ADD COLUMN \"seen_at\" timestamp with time zone;",
+      "UPDATE \"intakes\" SET \"seen_at\" = \"submitted_at\" WHERE \"submitted_at\" IS NOT NULL;",
+      "UPDATE \"intakes\" SET \"status\" = 'processado' WHERE \"status\" = 'recebido' AND \"submitted_at\" < now() - interval '1 hour';"
+    ]
   }
 ];

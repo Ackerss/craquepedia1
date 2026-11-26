@@ -22,6 +22,13 @@
       "when": 1795123516960,
       "tag": "0002_review",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795715952354,
+      "tag": "0003_rare_solo",
+      "breakpoints": true
     }
   ]
 }

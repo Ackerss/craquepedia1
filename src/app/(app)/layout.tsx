@@ -1,4 +1,4 @@
-import { and, eq, ne, sql as dsql } from "drizzle-orm";
+import { and, isNull, ne, sql as dsql } from "drizzle-orm";
 import { db } from "@/db";
 import { deliverables, intakes } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -14,7 +14,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .select({ n: dsql<number>`count(*)::int` })
       .from(deliverables)
       .where(and(ne(deliverables.stage, "entregue"), dsql`${deliverables.dueDate} < ${todayISO()}`)),
-    db.select({ n: dsql<number>`count(*)::int` }).from(intakes).where(eq(intakes.status, "recebido")),
+    db
+      .select({ n: dsql<number>`count(*)::int` })
+      .from(intakes)
+      .where(and(dsql`${intakes.submittedAt} is not null`, isNull(intakes.seenAt))),
   ]);
   const counts = { "/entregas": late?.n ?? 0, "/formularios": received?.n ?? 0 };
   return (

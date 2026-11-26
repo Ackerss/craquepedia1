@@ -165,6 +165,14 @@ export async function listPaymentsSince(isoDate: string) {
     .orderBy(desc(payments.paidAt));
 }
 
+/** A equipe abriu o atleta: formulários dele deixam de contar como "novos". */
+export async function markIntakesSeen(athleteId: string) {
+  await db
+    .update(intakes)
+    .set({ seenAt: new Date() })
+    .where(and(eq(intakes.athleteId, athleteId), dsql`${intakes.submittedAt} is not null`, dsql`${intakes.seenAt} is null`));
+}
+
 export async function listIntakes() {
   await ready();
   return db.select().from(intakes).orderBy(desc(intakes.createdAt)).limit(100);
@@ -229,7 +237,7 @@ export async function listOutreachForAthlete(athleteId: string) {
 export async function listPendingFollowUps() {
   await ready();
   return db
-    .select({ o: outreach, c: contacts, athleteName: athletes.fullName, athleteNickname: athletes.nickname, athleteSport: athletes.sport })
+    .select({ o: outreach, c: contacts, athleteName: athletes.fullName, athleteNickname: athletes.nickname, athleteSport: athletes.sport, athleteSlug: athletes.slug })
     .from(outreach)
     .innerJoin(contacts, eq(outreach.contactId, contacts.id))
     .innerJoin(athletes, eq(outreach.athleteId, athletes.id))

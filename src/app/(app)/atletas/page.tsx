@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search, Users } from "lucide-react";
+import { Download, Plus, Search, Users } from "lucide-react";
 import { listAthletes } from "@/lib/data";
 import { ATHLETE_STATUS } from "@/lib/catalog";
 import { getSport, SPORTS } from "@/lib/sports";
@@ -28,9 +28,14 @@ export default async function Atletas({ searchParams }: { searchParams: Promise<
         title="Atletas"
         subtitle={`${list.length} ${list.length === 1 ? "atleta" : "atletas"}`}
         actions={
-          <Link href="/atletas/novo" className="btn-primary">
-            <Plus className="size-4" /> Novo atleta
-          </Link>
+          <>
+            <a href="/api/exportar?tipo=atletas" className="btn-ghost" title="Baixar planilha com todos os atletas">
+              <Download className="size-4" /> Planilha
+            </a>
+            <Link href="/atletas/novo" className="btn-primary">
+              <Plus className="size-4" /> Novo atleta
+            </Link>
+          </>
         }
       />
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">

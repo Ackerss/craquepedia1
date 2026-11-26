@@ -22,7 +22,7 @@ import {
   Palette,
   Send,
 } from "lucide-react";
-import { getAthleteBundle, listPackages, listServices, listUsers } from "@/lib/data";
+import { getAthleteBundle, getCompany, listPackages, listServices, listUsers, markIntakesSeen } from "@/lib/data";
 import { STAGES } from "@/lib/catalog";
 import { getSport } from "@/lib/sports";
 import { ageFrom, brl, fmtDate, fmtPhone, igHandle, relTime, waLink } from "@/lib/utils";
@@ -63,8 +63,10 @@ export default async function AthletePage({
 }) {
   const { id } = await params;
   const { tab = "perfil", novo } = await searchParams;
-  const [bundle, users, packages, services] = await Promise.all([getAthleteBundle(id), listUsers(), listPackages(true), listServices(true)]);
+  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  const [bundle, users, packages, services, company] = await Promise.all([getAthleteBundle(id), listUsers(), listPackages(true), listServices(true), getCompany()]);
   if (!bundle) notFound();
+  await markIntakesSeen(id);
   const { athlete: a, deliverables, orders, payments, activities, gallery } = bundle;
   const sport = getSport(a.sport);
   const age = ageFrom(a.birthDate);
@@ -329,6 +331,9 @@ export default async function AthletePage({
                   ))}
               </dl>
               {a.consentAt ? <p className="mt-3 text-xs text-slate-400">Consentimento LGPD em {fmtDate(a.consentAt)}</p> : null}
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <RequestDataButton athleteId={a.id} name={a.fullName} phone={a.phone} sport={a.sport} label="Pedir atualização ao atleta" />
+              </div>
             </section>
             {a.notes ? (
               <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -365,7 +370,13 @@ export default async function AthletePage({
                     </p>
                     <div className="space-y-3">
                       {list.map((d) => (
-                        <DeliverableCard key={d.id} d={d} users={users} />
+                        <DeliverableCard
+                          key={d.id}
+                          d={d}
+                          users={users}
+                          showAthlete={false}
+                          athlete={{ id: a.id, name: a.nickname || a.fullName, fullName: a.fullName, sport: a.sport, slug: a.slug, phone: a.phone }}
+                        />
                       ))}
                     </div>
                   </div>
@@ -417,7 +428,13 @@ export default async function AthletePage({
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               {orders.map((o) => (
-                <OrderCard key={o.id} order={o} payments={payments.filter((p) => p.orderId === o.id)} />
+                <OrderCard
+                  key={o.id}
+                  order={o}
+                  payments={payments.filter((p) => p.orderId === o.id)}
+                  athlete={{ name: a.guardianName || a.fullName, phone: a.guardianPhone || a.phone }}
+                  pix={company.pix}
+                />
               ))}
             </div>
           )}
