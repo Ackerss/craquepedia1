@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { CheckCircle2 } from "lucide-react";
 import { db } from "@/db";
 import { intakes } from "@/db/schema";
-import { getCompany, ready } from "@/lib/data";
+import { getAthlete, getCompany, ready } from "@/lib/data";
 import { firstName } from "@/lib/utils";
 import { LogoMark } from "@/components/ui/Logo";
 import { IntakeForm } from "./IntakeForm";
@@ -15,6 +15,38 @@ export default async function IntakePage({ params }: { params: Promise<{ token: 
   await ready();
   const [intake] = await db.select().from(intakes).where(eq(intakes.token, token)).limit(1);
   const company = await getCompany();
+  // link de atualização (atleta já cadastrado): o formulário já vem preenchido com o que temos
+  const a = intake?.athleteId && intake.status === "aberto" ? await getAthlete(intake.athleteId) : null;
+  const prefill: Record<string, string> | undefined = a
+    ? Object.fromEntries(
+        Object.entries({
+          fullName: a.fullName,
+          nickname: a.nickname,
+          birthDate: a.birthDate,
+          gender: a.gender,
+          city: a.city,
+          state: a.state,
+          nationality: a.nationality,
+          secondNationality: a.secondNationality,
+          phone: a.phone,
+          email: a.email,
+          instagram: a.instagram,
+          guardianName: a.guardianName,
+          guardianPhone: a.guardianPhone,
+          currentClub: a.currentClub,
+          heightCm: a.heightCm ? String(a.heightCm) : null,
+          weightKg: a.weightKg ? String(a.weightKg) : null,
+          position: a.position,
+          dominantSide: a.dominantSide,
+          languages: a.languages,
+          edu_school: a.education?.school,
+          edu_graduationYear: a.education?.graduationYear,
+          edu_english: a.education?.english,
+          source: a.source,
+          ...Object.fromEntries(Object.entries(a.sportData ?? {}).map(([k, v]) => [`sd_${k}`, v])),
+        }).filter(([, v]) => v),
+      ) as Record<string, string>
+    : undefined;
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="mx-auto min-h-screen max-w-xl bg-white shadow-sm">
@@ -41,7 +73,15 @@ export default async function IntakePage({ params }: { params: Promise<{ token: 
             <p className="mt-1 text-slate-500">Obrigado! Se precisar mudar algo, fale com a equipe pelo WhatsApp.</p>
           </div>
         ) : (
-          <IntakeForm token={token} initialSport={intake.sport} initialName={intake.clientName} initialPhone={intake.clientPhone} company={company.name} />
+          <IntakeForm
+            token={token}
+            initialSport={a?.sport ?? intake.sport}
+            initialName={a?.fullName ?? intake.clientName}
+            initialPhone={a?.phone ?? intake.clientPhone}
+            company={company.name}
+            prefill={prefill}
+            hasPhoto={!!a?.photoId}
+          />
         )}
       </div>
     </div>

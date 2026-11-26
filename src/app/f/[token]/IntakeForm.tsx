@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Loader2, ShieldCheck, X } from "lucide-react";
 import { submitIntake } from "@/actions/intake";
 import { getSport } from "@/lib/sports";
@@ -11,6 +11,34 @@ import { SportIcon } from "@/components/ui/SportIcon";
 
 const UF = "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
 const STEPS = ["Esporte", "Sobre você", "Dados esportivos", "Sua trajetória", "Fotos e envio"];
+/** O envio inteiro precisa caber no limite da hospedagem (4,5 MB). */
+const PHOTO_BUDGET = 3_400_000;
+
+/** Comprime as fotos até o total caber no limite (tenta tamanhos cada vez menores). */
+async function fitPhotos(files: File[]) {
+  const tries: [number, number][] = [
+    [1600, 0.82],
+    [1280, 0.78],
+    [1024, 0.72],
+    [800, 0.68],
+  ];
+  let out: File[] = [];
+  for (const [max, q] of tries) {
+    out = await Promise.all(files.map((f) => compressImage(f, max, q)));
+    if (out.reduce((s, f) => s + f.size, 0) <= PHOTO_BUDGET) return out;
+  }
+  // último recurso: manda só as que couberem, na ordem (a 1ª é a principal)
+  const kept: File[] = [];
+  let total = 0;
+  for (const f of out) {
+    if (total + f.size > PHOTO_BUDGET) continue;
+    kept.push(f);
+    total += f.size;
+  }
+  return kept;
+}
+
+type Draft = { sport?: string; step?: number; fields: [string, string][] };
 
 function F({ label, hint, children, span = "" }: { label: string; hint?: string; children: React.ReactNode; span?: string }) {
   return (
@@ -28,12 +56,17 @@ export function IntakeForm({
   initialName,
   initialPhone,
   company,
+  prefill,
+  hasPhoto = false,
 }: {
   token: string;
   initialSport?: string | null;
   initialName?: string | null;
   initialPhone?: string | null;
   company: string;
+  /** dados que já temos (link de atualização) */
+  prefill?: Record<string, string>;
+  hasPhoto?: boolean;
 }) {
   const [step, setStep] = useState(initialSport ? 1 : 0);
   const [sport, setSport] = useState(initialSport ?? "");
@@ -45,6 +78,56 @@ export function IntakeForm({
   const [state, action, isPending] = useActionState(submitIntake.bind(null, token), null);
   const busy = sending || isPending;
   const def = sport ? getSport(sport) : null;
+  const pv = (k: string) => prefill?.[k] ?? "";
+  const draftKey = `cq-form-${token}`;
+  const pendingDraft = useRef<[string, string][] | null>(null);
+  const [restored, setRestored] = useState(false);
+
+  // Rascunho automático: se o atleta fechar a página no meio, o que ele digitou volta quando abrir o link de novo.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Draft;
+      pendingDraft.current = d.fields ?? [];
+      if (d.sport) setSport(d.sport);
+      if (typeof d.step === "number") setStep(Math.min(d.step, STEPS.length - 1));
+      setRestored(true);
+    } catch {}
+  }, [draftKey]);
+
+  useEffect(() => {
+    const f = formRef.current;
+    const fields = pendingDraft.current;
+    if (!restored || !f || !fields) return;
+    pendingDraft.current = null;
+    const byName = new Map<string, string[]>();
+    for (const [k, v] of fields) byName.set(k, [...(byName.get(k) ?? []), v]);
+    for (const [name, values] of byName) {
+      for (const el of Array.from(f.querySelectorAll<HTMLInputElement>(`[name="${CSS.escape(name)}"]`))) {
+        if (el.type === "file" || el.type === "hidden") continue;
+        if (el.type === "checkbox" || el.type === "radio") el.checked = values.includes(el.value) || (el.value === "on" && values.includes("on"));
+        else el.value = values[0] ?? "";
+      }
+    }
+  }, [sport, restored]);
+
+  const saveDraft = (atStep = step) => {
+    const f = formRef.current;
+    if (!f) return;
+    try {
+      const fields: [string, string][] = [];
+      for (const [k, v] of new FormData(f).entries()) if (typeof v === "string" && v && k !== "sport" && !k.startsWith("$")) fields.push([k, v]);
+      localStorage.setItem(draftKey, JSON.stringify({ sport, step: atStep, fields } satisfies Draft));
+    } catch {}
+  };
+  useEffect(() => {
+    if (state?.ok) {
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {}
+    }
+  }, [state, draftKey]);
 
   if (state?.ok)
     return (
@@ -78,7 +161,9 @@ export function IntakeForm({
       if (e) return setErr(e);
     }
     setErr(null);
-    setStep((s) => Math.max(0, Math.min(STEPS.length - 1, s + d)));
+    const next = Math.max(0, Math.min(STEPS.length - 1, step + d));
+    setStep(next);
+    saveDraft(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -86,7 +171,7 @@ export function IntakeForm({
     setSending(true);
     try {
       fd.delete("photos");
-      for (const p of photos) fd.append("photos", await compressImage(p.file, 1600, 0.82));
+      for (const f of await fitPhotos(photos.map((p) => p.file))) fd.append("photos", f);
     } finally {
       setSending(false);
     }
@@ -104,6 +189,7 @@ export function IntakeForm({
         }
         return submit(e);
       }}
+      onChange={() => saveDraft()}
       className="pb-28"
     >
       <input type="hidden" name="sport" value={sport} />
@@ -124,6 +210,11 @@ export function IntakeForm({
       </div>
 
       <div className="px-5 pt-2">
+        {restored ? (
+          <p className="mb-3 rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">Recuperamos o que você já tinha preenchido neste celular. É só continuar.</p>
+        ) : prefill ? (
+          <p className="mb-3 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-800">Já preenchemos com os dados que temos. Confira, corrija o que mudou e complete o que falta.</p>
+        ) : null}
         {/* 0 Esporte */}
         <div className={step === 0 ? "block" : "hidden"}>
           <h2 className="mb-1 text-xl font-bold text-ink-900">Qual é o seu esporte?</h2>
@@ -138,14 +229,14 @@ export function IntakeForm({
             <input name="fullName" defaultValue={initialName ?? ""} className="input" autoComplete="name" />
           </F>
           <F label="Apelido esportivo" hint="Como você é conhecido em campo/quadra">
-            <input name="nickname" className="input" />
+            <input name="nickname" defaultValue={pv("nickname")} className="input" />
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Nascimento *">
-              <input name="birthDate" type="date" className="input" />
+              <input name="birthDate" type="date" defaultValue={pv("birthDate")} className="input" />
             </F>
             <F label="Gênero">
-              <select name="gender" className="input">
+              <select name="gender" defaultValue={pv("gender")} className="input">
                 <option value="">—</option>
                 <option>Masculino</option>
                 <option>Feminino</option>
@@ -154,10 +245,10 @@ export function IntakeForm({
           </div>
           <div className="grid grid-cols-[1fr_90px] gap-3">
             <F label="Cidade">
-              <input name="city" className="input" autoComplete="address-level2" />
+              <input name="city" defaultValue={pv("city")} className="input" autoComplete="address-level2" />
             </F>
             <F label="UF">
-              <select name="state" className="input">
+              <select name="state" defaultValue={pv("state")} className="input">
                 <option value="">—</option>
                 {UF.map((u) => (
                   <option key={u}>{u}</option>
@@ -167,10 +258,10 @@ export function IntakeForm({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Nacionalidade">
-              <input name="nationality" defaultValue="Brasileira" className="input" />
+              <input name="nationality" defaultValue={pv("nationality") || "Brasileira"} className="input" />
             </F>
             <F label="Tem outra cidadania?">
-              <input name="secondNationality" className="input" placeholder="ex.: Italiana" />
+              <input name="secondNationality" defaultValue={pv("secondNationality")} className="input" placeholder="ex.: Italiana" />
             </F>
           </div>
           <F label="WhatsApp *">
@@ -178,17 +269,17 @@ export function IntakeForm({
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="E-mail">
-              <input name="email" type="email" className="input" autoComplete="email" />
+              <input name="email" type="email" defaultValue={pv("email")} className="input" autoComplete="email" />
             </F>
             <F label="Instagram">
-              <input name="instagram" className="input" placeholder="@seuperfil" />
+              <input name="instagram" defaultValue={pv("instagram")} className="input" placeholder="@seuperfil" />
             </F>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="mb-3 text-sm font-medium text-slate-700">Menor de 18 anos? Dados do responsável:</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <input name="guardianName" className="input" placeholder="Nome do responsável" />
-              <input name="guardianPhone" inputMode="tel" className="input" placeholder="WhatsApp do responsável" />
+              <input name="guardianName" defaultValue={pv("guardianName")} className="input" placeholder="Nome do responsável" />
+              <input name="guardianPhone" inputMode="tel" defaultValue={pv("guardianPhone")} className="input" placeholder="WhatsApp do responsável" />
             </div>
           </div>
         </div>
@@ -199,17 +290,25 @@ export function IntakeForm({
             <SportIcon sport={def?.slug} className="size-5 text-brand-600" /> Dados de {def?.name ?? "esporte"}
           </h2>
           <F label={def?.clubLabel ?? "Clube atual"}>
-            <input name="currentClub" className="input" />
+            <input name="currentClub" defaultValue={pv("currentClub")} className="input" />
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Altura (cm)">
-              <input name="heightCm" inputMode="numeric" className="input" placeholder="178" />
+              <input name="heightCm" inputMode="numeric" defaultValue={pv("heightCm")} className="input" placeholder="178" />
             </F>
             <F label="Peso (kg)">
-              <input name="weightKg" inputMode="numeric" className="input" placeholder="72" />
+              <input name="weightKg" inputMode="numeric" defaultValue={pv("weightKg")} className="input" placeholder="72" />
             </F>
           </div>
-          {sport ? <SportSpecific sport={sport} multiPosition /> : null}
+          {sport ? (
+            <SportSpecific
+              sport={sport}
+              multiPosition
+              position={pv("position")}
+              dominantSide={pv("dominantSide")}
+              sportData={prefill ? Object.fromEntries(Object.entries(prefill).filter(([k]) => k.startsWith("sd_")).map(([k, v]) => [k.slice(3), v])) : undefined}
+            />
+          ) : null}
           <F label="Como você descreve seu estilo de jogo?" hint="Ex.: rápido, bom no 1x1, forte no jogo aéreo, liderança...">
             <textarea name="playingStyle" className="input" rows={3} />
           </F>
@@ -233,13 +332,13 @@ export function IntakeForm({
           </F>
           <div className="grid gap-3 sm:grid-cols-2">
             <F label="Escola / faculdade">
-              <input name="edu_school" className="input" />
+              <input name="edu_school" defaultValue={pv("edu_school")} className="input" />
             </F>
             <F label="Ano em que termina os estudos">
-              <input name="edu_graduationYear" inputMode="numeric" className="input" />
+              <input name="edu_graduationYear" inputMode="numeric" defaultValue={pv("edu_graduationYear")} className="input" />
             </F>
             <F label="Nível de inglês">
-              <select name="edu_english" className="input">
+              <select name="edu_english" defaultValue={pv("edu_english")} className="input">
                 <option value="">—</option>
                 <option>Básico</option>
                 <option>Intermediário</option>
@@ -248,7 +347,7 @@ export function IntakeForm({
               </select>
             </F>
             <F label="Idiomas">
-              <input name="languages" className="input" placeholder="Português, Espanhol..." />
+              <input name="languages" defaultValue={pv("languages")} className="input" placeholder="Português, Espanhol..." />
             </F>
           </div>
           <F label="Seu objetivo com a Craquepedia">
@@ -265,7 +364,7 @@ export function IntakeForm({
             <textarea name="videos" className="input" rows={3} placeholder="https://" />
           </F>
           <F label="Como conheceu a Craquepedia?">
-            <input name="source" className="input" placeholder="Indicação de..., Instagram..." />
+            <input name="source" defaultValue={pv("source")} className="input" placeholder="Indicação de..., Instagram..." />
           </F>
         </div>
 
@@ -273,7 +372,13 @@ export function IntakeForm({
         <div className={step === 4 ? "block space-y-4" : "hidden"}>
           <h2 className="text-xl font-bold text-ink-900">Suas fotos</h2>
           <p className="-mt-2 text-sm text-slate-500">
-            A <b>primeira foto</b> vai no currículo: de preferência de rosto, com uniforme e fundo limpo. Depois, fotos em ação (até 8).
+            {hasPhoto ? (
+              <>Já temos a sua foto principal. Envie novas fotos só se quiser trocar ou acrescentar (a primeira vira a principal, até 8).</>
+            ) : (
+              <>
+                A <b>primeira foto</b> vai no currículo: de preferência de rosto, com uniforme e fundo limpo. Depois, fotos em ação (até 8).
+              </>
+            )}
           </p>
           <input
             ref={fileRef}

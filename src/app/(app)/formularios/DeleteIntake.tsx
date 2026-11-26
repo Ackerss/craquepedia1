@@ -7,7 +7,9 @@ import { deleteIntake } from "@/actions/intake";
 export function DeleteIntake({ id }: { id: string }) {
   const [pending, start] = useTransition();
   return (
-    <button disabled={pending} onClick={() => start(() => deleteIntake(id))} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Apagar link" aria-label="Apagar link">
+    <button disabled={pending} onClick={() => {
+        if (confirm("Apagar este link de formulário? O atleta (se já respondeu) continua cadastrado.")) start(() => deleteIntake(id));
+      }} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Apagar link" aria-label="Apagar link">
       <Trash2 className="size-4" />
     </button>
   );

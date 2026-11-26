@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { AlertTriangle, Check, CircleAlert, Lightbulb, Loader2, RefreshCw, ScanSearch, ThumbsUp, X } from "lucide-react";
 import type { AIReview, ReviewIssue } from "@/db/schema";
 import { resolveReviewIssue, reviewAthleteAI } from "@/actions/athletes";
+import { fmtDateTime } from "@/lib/utils";
 
 const LEVEL = {
   erro: { label: "Corrigir", icon: CircleAlert, cls: "border-red-200 bg-red-50 text-red-800", dot: "bg-red-500" },
@@ -143,7 +144,7 @@ export function ReviewPanel({ athleteId, review, reviewedAt, stale }: { athleteI
           </div>
           {review.summary ? <p className="mt-1 text-sm text-slate-600">{review.summary}</p> : null}
           <p className="mt-1 text-xs text-slate-400">
-            {reviewedAt ? `Revisado em ${new Date(reviewedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}` : ""} · {review.provider}
+            {reviewedAt ? `Revisado em ${fmtDateTime(reviewedAt)}` : ""} · {review.provider}
           </p>
         </div>
         <ReviewButton id={athleteId} label={stale ? "Revisar de novo (perfil mudou)" : "Revisar de novo"} className={stale ? "btn-primary btn-sm" : "btn-ghost btn-sm"} />

@@ -42,13 +42,15 @@ export function RequestDataButton({
   name,
   phone,
   sport,
-  missing,
+  missing = [],
+  label = "Pedir dados ao atleta",
 }: {
   athleteId: string;
   name: string;
   phone?: string | null;
   sport: string;
-  missing: string[];
+  missing?: string[];
+  label?: string;
 }) {
   const [pending, start] = useTransition();
   const [link, setLink] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function RequestDataButton({
           })
         }
       >
-        {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Pedir dados ao atleta
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} {label}
       </button>
       {link ? (
         <a
@@ -79,10 +81,12 @@ export function RequestDataButton({
           rel="noreferrer"
           href={waLink(
             phone,
-            `Oi ${firstName(name)}! Para deixar seu material ainda mais forte, preciso de algumas informações:\n${missing
-              .slice(0, 6)
-              .map((m) => `• ${m}`)
-              .join("\n")}\n\nPreencha por aqui, leva 5 minutos: ${link}`,
+            missing.length
+              ? `Oi ${firstName(name)}! Para deixar seu material ainda mais forte, preciso de algumas informações:\n${missing
+                  .slice(0, 6)
+                  .map((m) => `• ${m}`)
+                  .join("\n")}\n\nO formulário já vem com os dados que temos, é só completar (leva 5 minutos): ${link}`
+              : `Oi ${firstName(name)}! Vamos atualizar o seu material? Confira seus dados, corrija o que mudou e acrescente as novidades (clubes, conquistas, números, fotos). Já vem preenchido, leva poucos minutos: ${link}`,
           )}
         >
           <MessageCircle className="size-4" /> Enviar no WhatsApp

@@ -102,6 +102,8 @@ export const athletes = pgTable(
     coverId: uuid("cover_id"),
     accent: text("accent").default("#10b981"),
     portfolioTheme: text("portfolio_theme").notNull().default("arena"),
+    /** modelo de currículo "oficial" (o que abre no link público /cv/[slug]) */
+    resumeTemplate: text("resume_template"),
     responsibleId: uuid("responsible_id"),
     source: text("source"),
     notes: text("notes"),
@@ -227,6 +229,8 @@ export const intakes = pgTable("intakes", {
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  /** quando a equipe abriu o atleta depois do envio (some do contador de "novos") */
+  seenAt: timestamp("seen_at", { withTimezone: true }),
 });
 
 export const activities = pgTable(

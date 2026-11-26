@@ -13,6 +13,7 @@ export function ResumeViewer({
   embed = false,
   printLabel,
   sport,
+  publicView = false,
 }: {
   data: ResumeData;
   template: string;
@@ -21,6 +22,8 @@ export function ResumeViewer({
   embed?: boolean;
   printLabel?: string;
   sport?: string;
+  /** link público (clubes/olheiros): sem a lista de modelos, só idioma e download */
+  publicView?: boolean;
 }) {
   if (embed) {
     return (
@@ -45,7 +48,7 @@ export function ResumeViewer({
           ) : null}
           <p className="mr-2 truncate text-sm font-semibold">{data.displayName}</p>
           <div className="flex flex-1 gap-1 overflow-x-auto">
-            {list.map((m) => (
+            {(publicView ? [] : list).map((m) => (
               <Link
                 key={m.id}
                 href={href(m.id, m.onlyLang ?? data.lang)}

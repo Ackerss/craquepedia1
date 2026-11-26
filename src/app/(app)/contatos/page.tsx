@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Mail, MessageCircle } from "lucide-react";
+import { Building2, Download, Mail, MessageCircle } from "lucide-react";
 import { listContacts } from "@/lib/data";
 import { CONTACT_KINDS, kindLabel } from "@/lib/outreach";
 import { getSport } from "@/lib/sports";
@@ -9,6 +9,7 @@ import { DeleteContact } from "./DeleteContact";
 import { SportIcon } from "@/components/ui/SportIcon";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Contatos" };
 
 export default async function ContatosPage({ searchParams }: { searchParams: Promise<{ tipo?: string; q?: string }> }) {
   const sp = await searchParams;
@@ -31,7 +32,14 @@ export default async function ContatosPage({ searchParams }: { searchParams: Pro
           <h1 className="text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px]">Contatos de divulgação</h1>
           <p className="text-slate-500">Clubes, olheiros, empresários e universidades. Envie o material dos atletas pela aba &quot;Divulgação&quot; de cada um.</p>
         </div>
-        <ContactButton />
+        <div className="flex flex-wrap gap-2">
+          {all.length ? (
+            <a href="/api/exportar?tipo=contatos" className="btn-ghost" title="Baixar planilha de contatos">
+              <Download className="size-4" /> Planilha
+            </a>
+          ) : null}
+          <ContactButton />
+        </div>
       </div>
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
         <form className="flex-1">

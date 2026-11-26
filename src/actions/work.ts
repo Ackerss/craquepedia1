@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, inArray, sql as dsql } from "drizzle-orm";
+import { and, eq, inArray, sql as dsql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { athletes, deliverables, orders, packages, payments, services } from "@/db/schema";
@@ -79,7 +79,10 @@ export async function moveDeliverable(id: string, stage: string) {
 }
 
 export async function updateDeliverable(id: string, _: unknown, form: FormData) {
-  await requireUser();
+  const s = await requireUser();
+  const [cur] = await db.select().from(deliverables).where(eq(deliverables.id, id));
+  if (!cur) return { error: "Entrega não encontrada." };
+  const stage = str(form.get("stage")) ?? "a_fazer";
   const [d] = await db
     .update(deliverables)
     .set({
@@ -88,11 +91,13 @@ export async function updateDeliverable(id: string, _: unknown, form: FormData) 
       dueDate: str(form.get("dueDate")),
       link: str(form.get("link")),
       notes: str(form.get("notes")),
-      stage: str(form.get("stage")) ?? "a_fazer",
+      stage,
+      deliveredAt: stage === "entregue" ? (cur.deliveredAt ?? new Date()) : null,
       updatedAt: new Date(),
     })
     .where(eq(deliverables.id, id))
     .returning();
+  if (d && stage === "entregue" && cur.stage !== "entregue") await logActivity("entrega", `Entregou: ${d.title}`, d.athleteId, s.uid);
   refresh(d?.athleteId);
   return { ok: true };
 }
@@ -129,16 +134,8 @@ export async function addPayment(orderId: string, _: unknown, form: FormData) {
     method: str(form.get("method")),
     paidAt: str(form.get("paidAt")) ?? todayISO(),
   });
-  const [o] = await db
-    .update(orders)
-    .set({ paidCents: dsql`${orders.paidCents} + ${amount}` })
-    .where(eq(orders.id, orderId))
-    .returning();
-  if (o) {
-    const status = o.paidCents >= o.totalCents ? "pago" : o.paidCents > 0 ? "parcial" : "aberto";
-    await db.update(orders).set({ status }).where(eq(orders.id, orderId));
-    await logActivity("pagamento", `Recebeu ${brl(amount)} — ${o.title}`, o.athleteId, s.uid);
-  }
+  const o = await recalcOrder(orderId);
+  if (o) await logActivity("pagamento", `Recebeu ${brl(amount)} — ${o.title}`, o.athleteId, s.uid);
   refresh(o?.athleteId);
   return { ok: true };
 }
@@ -146,8 +143,55 @@ export async function addPayment(orderId: string, _: unknown, form: FormData) {
 export async function cancelOrder(orderId: string) {
   const s = await requireUser();
   const [o] = await db.update(orders).set({ status: "cancelado" }).where(eq(orders.id, orderId)).returning();
-  if (o) await logActivity("contrato", `Cancelou ${o.title}`, o.athleteId, s.uid);
+  if (o) {
+    // entregas desse contrato que nem começaram saem do quadro (as já iniciadas ficam)
+    const removed = await db
+      .delete(deliverables)
+      .where(and(eq(deliverables.orderId, orderId), eq(deliverables.stage, "a_fazer")))
+      .returning({ id: deliverables.id });
+    await logActivity("contrato", `Cancelou ${o.title}${removed.length ? ` (${removed.length} entrega(s) não iniciadas removidas)` : ""}`, o.athleteId, s.uid);
+  }
   refresh(o?.athleteId);
+}
+
+/** Recalcula o total pago e o status do contrato a partir dos pagamentos. */
+async function recalcOrder(orderId: string) {
+  const [{ total }] = await db
+    .select({ total: dsql<number>`coalesce(sum(${payments.amountCents}), 0)::int` })
+    .from(payments)
+    .where(eq(payments.orderId, orderId));
+  const [o] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!o) return null;
+  const status = o.status === "cancelado" ? "cancelado" : total >= o.totalCents && o.totalCents > 0 ? "pago" : total > 0 ? "parcial" : o.totalCents === 0 ? "pago" : "aberto";
+  const [u] = await db.update(orders).set({ paidCents: total, status }).where(eq(orders.id, orderId)).returning();
+  return u;
+}
+
+/** Apaga um pagamento lançado errado (o contrato é recalculado). */
+export async function deletePayment(paymentId: string) {
+  const s = await requireUser();
+  const [p] = await db.delete(payments).where(eq(payments.id, paymentId)).returning();
+  if (!p) return;
+  const o = await recalcOrder(p.orderId);
+  if (o) await logActivity("pagamento", `Apagou pagamento de ${brl(p.amountCents)} — ${o.title}`, o.athleteId, s.uid);
+  refresh(o?.athleteId);
+}
+
+/** Corrige o valor total de um contrato (desconto, ajuste). */
+export async function updateOrderTotal(orderId: string, _: unknown, form: FormData) {
+  const s = await requireUser();
+  const total = parseBRL(form.get("total"));
+  if (total < 0) return { error: "Valor inválido." };
+  const [cur] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!cur) return { error: "Contrato não encontrado." };
+  await db
+    .update(orders)
+    .set({ totalCents: total, dueDate: str(form.get("dueDate")), notes: str(form.get("notes")) })
+    .where(eq(orders.id, orderId));
+  const o = await recalcOrder(orderId);
+  if (o && total !== cur.totalCents) await logActivity("contrato", `Ajustou o valor de ${o.title}: ${brl(cur.totalCents)} → ${brl(total)}`, o.athleteId, s.uid);
+  refresh(o?.athleteId);
+  return { ok: true };
 }
 
 export async function deleteOrder(orderId: string) {

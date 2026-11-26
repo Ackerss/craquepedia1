@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { AlertTriangle, BookOpen, Bot, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Inbox, Plus, Send, TrendingUp, Users, Wallet } from "lucide-react";
-import { listAthletes, listDeliverables, listIntakes, listOrders, listPaymentsSince, listPendingFollowUps, listUsers, recentActivities } from "@/lib/data";
+import { AlertTriangle, BookOpen, Bot, ArrowRight, CalendarClock, Cake, CheckCircle2, ClipboardList, Handshake, Inbox, MessageCircle, Plus, Send, TrendingUp, Users, Wallet } from "lucide-react";
+import { getCompany, listAthletes, listDeliverables, listIntakes, listOrders, listPaymentsSince, listPendingFollowUps, listUsers, recentActivities } from "@/lib/data";
+import { baseUrl } from "@/lib/server-utils";
+import { FollowUpActions } from "@/components/dashboard/FollowUpActions";
 import { requireUser } from "@/lib/auth";
 import { aiStatus } from "@/lib/ai";
 import { STAGES } from "@/lib/catalog";
 import { getSport } from "@/lib/sports";
-import { brl, daysUntil, fmtDate, msSince, relTime, todayISO } from "@/lib/utils";
+import { ageFrom, brl, daysToBirthday, daysUntil, firstName, fmtDate, isoInTZ, msSince, relTime, todayISO, waLink } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
 import { SportBadge } from "@/components/ui/SportIcon";
 
@@ -28,7 +30,13 @@ export default async function Dashboard() {
     recentActivities(12),
     listUsers(),
   ]);
-  const [follow, ai] = await Promise.all([listPendingFollowUps(), aiStatus()]);
+  const [follow, ai, company, base] = await Promise.all([listPendingFollowUps(), aiStatus(), getCompany(), baseUrl()]);
+  const birthdays = ath
+    .filter((a) => a.status !== "encerrado")
+    .map((a) => ({ a, n: daysToBirthday(a.birthDate) }))
+    .filter((x): x is { a: (typeof ath)[number]; n: number } => x.n !== null && x.n <= 7)
+    .sort((x, y) => x.n - y.n);
+  const leads = ath.filter((a) => a.status === "lead");
   const open = dels.filter((d) => d.d.stage !== "entregue");
   const late = open.filter((d) => (daysUntil(d.d.dueDate) ?? 99) < 0);
   const soon = open
@@ -37,8 +45,8 @@ export default async function Dashboard() {
   const mine = open.filter((d) => d.d.assigneeId === s.uid);
   const toReceive = ords.filter((o) => o.o.status === "aberto" || o.o.status === "parcial").reduce((sum, o) => sum + (o.o.totalCents - o.o.paidCents), 0);
   const received = pays.reduce((sum, p) => sum + p.p.amountCents, 0);
-  const newForms = intakes.filter((i) => i.status === "recebido" || i.status === "processado").filter((i) => i.submittedAt && msSince(i.submittedAt) < 7 * 86400000);
-  const deliveredMonth = dels.filter((d) => d.d.deliveredAt && d.d.deliveredAt.toISOString().slice(0, 10) >= monthStart).length;
+  const newForms = intakes.filter((i) => i.submittedAt && (!i.seenAt || msSince(i.submittedAt) < 7 * 86400000));
+  const deliveredMonth = dels.filter((d) => d.d.deliveredAt && isoInTZ(d.d.deliveredAt) >= monthStart).length;
   const userName = (id?: string | null) => users.find((u) => u.id === id)?.name ?? "—";
 
   const kpis = [
@@ -169,6 +177,7 @@ export default async function Dashboard() {
                       <p className="truncate font-medium">{i.clientName}</p>
                       <p className="text-xs text-slate-500">{i.submittedAt ? relTime(i.submittedAt) : ""}</p>
                     </div>
+                    {!i.seenAt ? <span className="badge bg-brand-600 text-white">Novo</span> : null}
                     <ArrowRight className="size-4 text-slate-400" />
                   </Link>
                 </li>
@@ -187,18 +196,76 @@ export default async function Dashboard() {
               </Link>
             </div>
             <ul className="divide-y divide-slate-100">
-              {follow.map((f) => (
-                <li key={f.o.id}>
-                  <Link href={`/atletas/${f.o.athleteId}?tab=divulgacao`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
-                    <SportBadge sport={f.athleteSport} size={32} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{f.c.organization || f.c.name}</p>
-                      <p className="truncate text-xs text-slate-500">
-                        {f.athleteNickname || f.athleteName} · enviado {fmtDate(f.o.sentAt)}
+              {follow.map((f) => {
+                const msg = `Olá ${firstName(f.c.name)}, tudo bem? Aqui é da ${company.name}. Passando para saber se conseguiu ver o material do(a) atleta ${f.athleteName} que enviei em ${fmtDate(f.o.sentAt)}.\n\nPortfólio: ${base}/p/${f.athleteSlug}\n\nFico à disposição para mandar mais vídeos ou informações!`;
+                return (
+                  <li key={f.o.id} className="flex items-center gap-2 px-5 py-3 hover:bg-slate-50">
+                    <Link href={`/atletas/${f.o.athleteId}?tab=divulgacao`} className="flex min-w-0 flex-1 items-center gap-3">
+                      <SportBadge sport={f.athleteSport} size={32} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{f.c.organization || f.c.name}</p>
+                        <p className="truncate text-xs text-slate-500">
+                          {f.athleteNickname || f.athleteName} · enviado {fmtDate(f.o.sentAt)}
+                        </p>
+                      </div>
+                    </Link>
+                    <FollowUpActions id={f.o.id} athleteId={f.o.athleteId} phone={f.c.phone} message={msg} />
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+        {birthdays.length ? (
+          <section className="card">
+            <h2 className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 font-semibold">
+              <Cake className="size-5 text-pink-500" /> Aniversários da semana
+            </h2>
+            <ul className="divide-y divide-slate-100">
+              {birthdays.map(({ a, n }) => {
+                const age = (ageFrom(a.birthDate) ?? 0) + (n === 0 ? 0 : 1);
+                const msg = `Parabéns, ${firstName(a.nickname || a.fullName)}! 🎉🎂 Toda a equipe da ${company.name} deseja um feliz aniversário, muita saúde e muitas conquistas dentro e fora ${a.sport === "futebol" ? "de campo" : "do esporte"}! 🏆`;
+                return (
+                  <li key={a.id} className="flex items-center gap-3 px-5 py-3">
+                    <Avatar name={a.fullName} photoId={a.photoId} size={32} />
+                    <Link href={`/atletas/${a.id}`} className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{a.nickname || a.fullName}</p>
+                      <p className="text-xs text-slate-500">
+                        {n === 0 ? "Hoje!" : n === 1 ? "Amanhã" : `em ${n} dias`} · faz {age} anos
                       </p>
-                    </div>
-                    <ArrowRight className="size-4 text-slate-400" />
+                    </Link>
+                    {a.phone ? (
+                      <a href={waLink(a.phone, msg)} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-[#128C7E] hover:bg-[#25D366]/15" title="Mandar parabéns no WhatsApp" aria-label="Mandar parabéns no WhatsApp">
+                        <MessageCircle className="size-4" />
+                      </a>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+        {leads.length ? (
+          <section className="card">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="flex items-center gap-2 font-semibold">
+                <Handshake className="size-5 text-violet-600" /> Em negociação
+              </h2>
+              <Link href="/atletas?status=lead" className="text-sm font-medium text-brand-700 hover:underline">
+                Ver todos
+              </Link>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {leads.slice(0, 6).map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-5 py-3">
+                  <SportBadge sport={a.sport} size={32} />
+                  <Link href={`/atletas/${a.id}?tab=financeiro`} className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{a.nickname || a.fullName}</p>
+                    <p className="text-xs text-slate-500">cadastrado {relTime(a.createdAt)}</p>
                   </Link>
+                  <a href={`/doc/proposta/${a.id}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm">
+                    Proposta
+                  </a>
                 </li>
               ))}
             </ul>

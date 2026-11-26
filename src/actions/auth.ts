@@ -28,7 +28,8 @@ export async function login(_: unknown, form: FormData) {
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
-  redirect(next.startsWith("/") ? next : "/");
+  // só redireciona para páginas internas (evita "//site-externo")
+  redirect(/^\/(?![/\\])/.test(next) ? next : "/");
 }
 
 export async function logout() {

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ExternalLink, FileText, Globe, IdCard, LayoutTemplate, MessageCircle, Printer, Sparkles } from "lucide-react";
 import type { Athlete } from "@/db/schema";
-import { templatesFor } from "@/lib/templates";
+import { officialTemplate, templatesFor } from "@/lib/templates";
 import { getSport } from "@/lib/sports";
 import { baseUrl, qrSvg } from "@/lib/server-utils";
 import { firstName, waLink } from "@/lib/utils";
 import { CopyButton } from "@/components/ui/CopyButton";
-import { PortfolioThemePicker } from "@/components/athlete/HubActions";
+import { OfficialTemplateButton, PortfolioThemePicker } from "@/components/athlete/HubActions";
 import { PORTFOLIO_THEMES } from "@/lib/portfolio-themes";
 
 export async function Materials({ a }: { a: Athlete }) {
@@ -19,6 +19,7 @@ export async function Materials({ a }: { a: Athlete }) {
   const qr = await qrSvg(links.portfolio);
   const sport = getSport(a.sport);
   const { recommended, general, others } = templatesFor(sport.slug);
+  const official = officialTemplate(a);
   const groups = [
     { title: `Recomendados para ${sport.name}`, list: recommended, rec: true },
     { title: `Modelos para todos os esportes (${general.length})`, list: general, rec: false },
@@ -32,6 +33,21 @@ export async function Materials({ a }: { a: Athlete }) {
           Os links públicos deste atleta estão desativados. Ative em &quot;Links públicos ativos&quot; no topo da página para compartilhar.
         </p>
       ) : null}
+      <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1 text-sm text-amber-950">
+          <p className="font-semibold">
+            Currículo oficial: {official.name}
+            {!a.resumeTemplate ? <span className="font-normal text-amber-800"> (sugerido para {sport.name.toLowerCase()})</span> : null}
+          </p>
+          <p className="text-amber-900/80">É o modelo que abre no link público. Para trocar, clique na ★ de outro modelo abaixo.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a href={links.cv} target="_blank" rel="noreferrer" className="btn-ghost btn-sm bg-white">
+            <ExternalLink className="size-4" /> Ver como o clube vê
+          </a>
+          <CopyButton text={links.cv} label="Copiar link" className="btn-ghost btn-sm bg-white" />
+        </div>
+      </div>
       {groups.map((g) =>
         g.list.length ? (
           <section key={g.title}>
@@ -70,7 +86,7 @@ export async function Materials({ a }: { a: Athlete }) {
                           <Globe className="size-4" /> EN
                         </Link>
                       ) : null}
-                      <CopyButton text={`${links.cv}?m=${t.id}`} label="Link" />
+                      <OfficialTemplateButton id={a.id} template={t.id} official={official.id === t.id} />
                     </div>
                   </div>
                 </div>

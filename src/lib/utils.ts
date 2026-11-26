@@ -17,28 +17,49 @@ export function parseBRL(v: FormDataEntryValue | null | undefined): number {
 }
 
 export function ageFrom(birth?: string | null): number | null {
-  if (!birth) return null;
-  const d = new Date(birth + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
-  let a = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
-  return a;
+  if (!birth || !/^\d{4}-\d{2}-\d{2}/.test(birth)) return null;
+  const [by, bm, bd] = birth.slice(0, 10).split("-").map(Number);
+  const [ty, tm, td] = todayISO().split("-").map(Number);
+  let a = ty - by;
+  if (tm < bm || (tm === bm && td < bd)) a--;
+  return a >= 0 && a < 120 ? a : null;
 }
+
+/** Dias até o próximo aniversário (0 = hoje). */
+export function daysToBirthday(birth?: string | null): number | null {
+  if (!birth || !/^\d{4}-\d{2}-\d{2}/.test(birth)) return null;
+  const today = todayISO();
+  const year = Number(today.slice(0, 4));
+  const md = birth.slice(5, 10) === "02-29" ? "02-28" : birth.slice(5, 10);
+  let next = `${year}-${md}`;
+  if (next < today) next = `${year + 1}-${md}`;
+  return daysUntil(next);
+}
+
+/** Fuso da equipe (o servidor roda em UTC; sem isso, depois das 21h o "hoje" virava amanhã). */
+export const TZ = "America/Sao_Paulo";
 
 export function fmtDate(v?: string | Date | null, opts?: Intl.DateTimeFormatOptions) {
   if (!v) return "";
-  const d = typeof v === "string" ? new Date(v.length === 10 ? v + "T12:00:00" : v) : v;
+  const dateOnly = typeof v === "string" && v.length === 10;
+  const d = typeof v === "string" ? new Date(dateOnly ? v + "T12:00:00Z" : v) : v;
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("pt-BR", opts ?? { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("pt-BR", { ...(opts ?? { day: "2-digit", month: "2-digit", year: "numeric" }), timeZone: dateOnly ? "UTC" : TZ });
+}
+
+/** Data e hora no fuso da equipe. Ex.: 26/11/2026 às 14:05 */
+export function fmtDateTime(v?: string | Date | null) {
+  if (!v) return "";
+  const d = typeof v === "string" ? new Date(v) : v;
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.toLocaleDateString("pt-BR", { timeZone: TZ })} às ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })}`;
 }
 
 export function fmtDateEn(v?: string | null) {
   if (!v) return "";
-  const d = new Date(v + "T12:00:00");
+  const d = new Date(v + "T12:00:00Z");
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export function relTime(v: string | Date) {
@@ -47,23 +68,38 @@ export function relTime(v: string | Date) {
   if (diff < 60) return "agora";
   if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
   if (diff < 86400) return `há ${Math.floor(diff / 3600)} h`;
-  if (diff < 86400 * 7) return `há ${Math.floor(diff / 86400)} d`;
+  if (diff < 86400 * 2) return "ontem";
+  if (diff < 86400 * 7) return `há ${Math.floor(diff / 86400)} dias`;
   return fmtDate(d);
 }
 
 export function daysUntil(date?: string | null) {
   if (!date) return null;
-  const d = new Date(date + "T12:00:00");
-  const now = new Date();
-  now.setHours(12, 0, 0, 0);
-  return Math.round((d.getTime() - now.getTime()) / 86400000);
+  const d = Date.parse(date.slice(0, 10) + "T12:00:00Z");
+  const now = Date.parse(todayISO() + "T12:00:00Z");
+  if (Number.isNaN(d)) return null;
+  return Math.round((d - now) / 86400000);
 }
 
+/** Data de hoje (AAAA-MM-DD) no fuso de Brasília, com deslocamento opcional em dias. */
 export function todayISO(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const tz = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  if (!offsetDays) return parts;
+  const d = new Date(parts + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Soma dias a uma data AAAA-MM-DD. */
+export function addDaysISO(iso: string, days: number) {
+  const d = new Date(iso.slice(0, 10) + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Data (AAAA-MM-DD) de um instante, no fuso de Brasília. */
+export function isoInTZ(v: Date | string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(typeof v === "string" ? new Date(v) : v);
 }
 
 export function slugify(s: string) {

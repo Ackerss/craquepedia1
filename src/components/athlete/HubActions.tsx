@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Check, Copy, Loader2, MessageCircle, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { Check, Copy, Loader2, MessageCircle, Sparkles, Star, Trash2, Wand2 } from "lucide-react";
 import { deleteAthlete, generateAthleteText, runAthleteAI, setAthleteField, setAthleteStatus } from "@/actions/athletes";
 import { ATHLETE_STATUS } from "@/lib/catalog";
 import { waLink } from "@/lib/utils";
@@ -241,5 +241,33 @@ export function PortfolioThemePicker({ id, slug, value, themes }: { id: string; 
         </label>
       ))}
     </div>
+  );
+}
+
+/** Marca o modelo de currículo que abre no link público do atleta. */
+export function OfficialTemplateButton({ id, template, official }: { id: string; template: string; official: boolean }) {
+  const [pending, start] = useTransition();
+  const router = useRouter();
+  if (official)
+    return (
+      <span className="btn btn-sm cursor-default bg-amber-50 text-amber-800" title="Este é o modelo que abre no link público do currículo">
+        <Star className="size-4 fill-amber-400 text-amber-500" /> Oficial
+      </span>
+    );
+  return (
+    <button
+      type="button"
+      className="btn-ghost btn-sm"
+      disabled={pending}
+      title="Usar este modelo no link público do currículo"
+      onClick={() =>
+        start(async () => {
+          await setAthleteField(id, "resumeTemplate", template);
+          router.refresh();
+        })
+      }
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" /> : <Star className="size-4" />}
+    </button>
   );
 }

@@ -117,7 +117,7 @@ export function SendMaterial({ athleteId, contacts, info }: { athleteId: string;
   );
 }
 
-export function OutreachRow({ o, c, athleteId }: { o: Outreach; c: Contact; athleteId: string }) {
+export function OutreachRow({ o, c, athleteId, followMsg, due }: { o: Outreach; c: Contact; athleteId: string; followMsg?: string; due?: boolean }) {
   const [pending, start] = useTransition();
   const st = OUTREACH_STATUS.find((s) => s.key === o.status);
   return (
@@ -131,6 +131,11 @@ export function OutreachRow({ o, c, athleteId }: { o: Outreach; c: Contact; athl
             .join(" · ")}
         </p>
       </div>
+      {o.status === "enviado" && due && c.phone && followMsg ? (
+        <a href={waLink(c.phone, followMsg)} target="_blank" rel="noreferrer" className="btn btn-sm bg-amber-100 text-amber-900 hover:bg-amber-200" title="Já passou o prazo: cobrar retorno pelo WhatsApp">
+          <MessageCircle className="size-4" /> Cobrar retorno
+        </a>
+      ) : null}
       <select
         className="input w-auto py-1.5 text-sm"
         defaultValue={o.status}
@@ -143,7 +148,9 @@ export function OutreachRow({ o, c, athleteId }: { o: Outreach; c: Contact; athl
           </option>
         ))}
       </select>
-      <button type="button" className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Remover envio" onClick={() => start(() => deleteOutreach(o.id, athleteId))}>
+      <button type="button" className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Remover envio" onClick={() => {
+          if (confirm("Remover este envio do histórico?")) start(() => deleteOutreach(o.id, athleteId));
+        }}>
         <Trash2 className="size-4" />
       </button>
     </li>
