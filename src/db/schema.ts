@@ -56,6 +56,10 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
   color: text("color").notNull().default("#10b981"),
+  /** senha provisória definida por outra pessoa da equipe: mostra aviso para trocar */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  failedLogins: integer("failed_logins").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

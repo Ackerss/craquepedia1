@@ -58,5 +58,13 @@ export const MIGRATIONS: { name: string; statements: string[] }[] = [
       "UPDATE \"intakes\" SET \"seen_at\" = \"submitted_at\" WHERE \"submitted_at\" IS NOT NULL;",
       "UPDATE \"intakes\" SET \"status\" = 'processado' WHERE \"status\" = 'recebido' AND \"submitted_at\" < now() - interval '1 hour';"
     ]
+  },
+  {
+    "name": "0004_absurd_edwin_jarvis",
+    "statements": [
+      "ALTER TABLE \"users\" ADD COLUMN \"must_change_password\" boolean DEFAULT false NOT NULL;",
+      "ALTER TABLE \"users\" ADD COLUMN \"failed_logins\" integer DEFAULT 0 NOT NULL;",
+      "ALTER TABLE \"users\" ADD COLUMN \"locked_until\" timestamp with time zone;"
+    ]
   }
 ];

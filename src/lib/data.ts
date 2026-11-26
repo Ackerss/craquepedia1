@@ -30,7 +30,7 @@ export async function uniqueSlug(name: string, ignoreId?: string) {
 
 export async function listUsers() {
   await ready();
-  return db.select({ id: users.id, name: users.name, username: users.username, color: users.color }).from(users).orderBy(asc(users.name));
+  return db.select({ id: users.id, name: users.name, username: users.username, color: users.color, mustChangePassword: users.mustChangePassword }).from(users).orderBy(asc(users.name));
 }
 
 export async function listServices(onlyActive = false) {
