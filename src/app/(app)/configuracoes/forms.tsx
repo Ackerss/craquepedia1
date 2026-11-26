@@ -1,14 +1,15 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { Check, Copy, KeyRound, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import type { Package, Service } from "@/db/schema";
-import { changePassword, createUser } from "@/actions/auth";
+import { changePassword, createUser, setUserPassword } from "@/actions/auth";
 import { deletePackage, saveAISettings, saveCompany, savePackage, saveService, testAI } from "@/actions/settings";
 import type { CompanySettings } from "@/lib/data";
 import { brl } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { FormMessage, Submit } from "@/components/ui/Submit";
+import { keepValues } from "@/lib/form-submit";
 
 type S = { error?: string; ok?: string } | null;
 const money = (c: number) => (c / 100).toFixed(2).replace(".", ",");
@@ -174,29 +175,85 @@ export function PackageBadge({ highlight }: { highlight: boolean }) {
   ) : null;
 }
 
-export function NewUserForm() {
-  const [state, action] = useActionState(createUser, null);
+function AccessCopy({ username, password }: { username: string; password: string }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-4">
+    <button
+      type="button"
+      className="btn-ghost btn-sm"
+      onClick={async () => {
+        const text = `Seu acesso à central:\n${window.location.origin}/login\nUsuário: ${username}\nSenha provisória: ${password}\n\nDepois de entrar, troque a senha em Configurações → Minha senha.`;
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        } catch {
+          /* sem permissão de copiar */
+        }
+      }}
+    >
+      {copied ? <Check className="size-4" /> : <Copy className="size-4" />} {copied ? "Copiado!" : "Copiar acesso para enviar"}
+    </button>
+  );
+}
+
+type Created = { error?: string; ok?: string; username?: string } | null;
+
+export function NewUserForm() {
+  const [state, dispatch, pending] = useActionState(createUser, null as Created);
+  const [pass, setPass] = useState("");
+  return (
+    <form onSubmit={keepValues(dispatch, (fd) => setPass(String(fd.get("password") ?? "")))} className="grid gap-3 sm:grid-cols-3">
       <input name="name" placeholder="Nome (ex.: Diego)" className="input" required />
-      <input name="username" placeholder="Usuário (ex.: diego)" className="input" required />
-      <input name="password" type="password" placeholder="Senha (mín. 8)" className="input" required minLength={8} autoComplete="new-password" />
-      <Submit>Criar acesso</Submit>
-      <div className="sm:col-span-4">
-        <FormMessage state={state as S} />
+      <input name="username" placeholder="Usuário (ex.: diego)" className="input" required autoCapitalize="none" />
+      <input name="password" type="text" placeholder="Senha provisória" className="input" required minLength={4} autoComplete="off" />
+      <Submit pending={pending} className="btn-primary sm:col-span-3 sm:justify-self-start">
+        <Plus className="size-4" /> Criar acesso
+      </Submit>
+      <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
+        <FormMessage state={state} />
+        {state?.ok && state.username ? <AccessCopy username={state.username} password={pass} /> : null}
       </div>
     </form>
+  );
+}
+
+export function SetPasswordButton({ userId, name }: { userId: string; name: string }) {
+  const [open, setOpen] = useState(false);
+  const [state, dispatch, pending] = useActionState(setUserPassword.bind(null, userId), null as Created);
+  const [pass, setPass] = useState("");
+  return (
+    <>
+      <button type="button" className="btn-ghost btn-sm" onClick={() => setOpen(true)}>
+        <KeyRound className="size-4" /> Definir senha
+      </button>
+      <Modal open={open} onClose={() => setOpen(false)} title={`Senha de ${name}`}>
+        <form onSubmit={keepValues(dispatch, (fd) => setPass(String(fd.get("password") ?? "")))} className="space-y-3 p-5">
+          <p className="text-sm text-slate-600">
+            Defina uma senha provisória (pode ser simples, como 1234). Ao entrar, {name} verá um aviso para trocar por uma senha só dele.
+          </p>
+          <input name="password" type="text" placeholder="Nova senha" className="input" required minLength={4} autoComplete="off" autoFocus />
+          <Submit pending={pending} className="btn-primary w-full">
+            Salvar senha
+          </Submit>
+          <div className="flex flex-wrap items-center gap-2">
+            <FormMessage state={state} />
+            {state?.ok && state.username ? <AccessCopy username={state.username} password={pass} /> : null}
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }
 
 export function PasswordForm() {
   const [state, action] = useActionState(changePassword, null);
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-3">
+    <form action={action} className="grid gap-3 sm:grid-cols-2">
       <input name="current" type="password" placeholder="Senha atual" className="input" required autoComplete="current-password" />
       <input name="next" type="password" placeholder="Nova senha (mín. 8)" className="input" required minLength={8} autoComplete="new-password" />
-      <Submit>Trocar senha</Submit>
-      <div className="sm:col-span-3">
+      <Submit className="btn-primary sm:col-span-2 sm:justify-self-start">Trocar senha</Submit>
+      <div className="sm:col-span-2">
         <FormMessage state={state as S} />
       </div>
     </form>

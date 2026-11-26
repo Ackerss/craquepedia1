@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { aiStatus, GEMINI_MODELS } from "@/lib/ai";
 import { brl } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { AIForm, CompanyForm, NewUserForm, PackageBadge, PackageEditor, PasswordForm, ServiceEditor } from "./forms";
+import { AIForm, CompanyForm, NewUserForm, PackageBadge, PackageEditor, PasswordForm, ServiceEditor, SetPasswordButton } from "./forms";
 
 export const metadata = { title: "Configurações" };
 export const dynamic = "force-dynamic";
@@ -74,22 +74,28 @@ export default async function Configuracoes() {
       </Box>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Box title="Equipe" desc="Quem acessa a plataforma.">
+        <Box title="Equipe" desc="Quem acessa a plataforma. Esqueceu a senha? Use Definir senha ao lado do nome.">
           <ul className="mb-4 space-y-2">
             {users.map((u) => (
-              <li key={u.id} className="flex items-center gap-3">
+              <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex size-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: u.color }}>
                   {u.name[0]}
                 </span>
                 <span className="font-medium">{u.name}</span>
                 <span className="text-sm text-slate-500">@{u.username}</span>
                 {u.id === s.uid ? <span className="badge bg-slate-100 text-slate-600">você</span> : null}
+                {u.mustChangePassword ? <span className="badge bg-amber-100 text-amber-800">senha provisória</span> : null}
+                {u.id !== s.uid ? (
+                  <span className="ml-auto">
+                    <SetPasswordButton userId={u.id} name={u.name} />
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
           <NewUserForm />
         </Box>
-        <Box title="Minha senha">
+        <Box id="senha" title="Minha senha">
           <PasswordForm />
         </Box>
       </div>

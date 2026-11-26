@@ -186,6 +186,10 @@ export const MANUAL_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Como crio o acesso do Diego?",
-    a: "Configurações → Equipe: informe nome, usuário e uma senha inicial. Ele troca a senha em Configurações → Minha senha.",
+    a: "Configurações → Equipe: informe nome, usuário e uma senha provisória (pode ser simples, como 1234) e clique em \"Copiar acesso para enviar\". Se ele já tem usuário ou esqueceu a senha, clique em \"Definir senha\" ao lado do nome. No primeiro login aparece um aviso para ele criar uma senha só dele em Configurações → Minha senha.",
+  },
+  {
+    q: "Errei a senha várias vezes e bloqueou. E agora?",
+    a: "Depois de 5 senhas erradas seguidas o acesso fica bloqueado por 15 minutos (proteção contra quem tenta adivinhar). Espere ou peça para a outra pessoa da equipe usar \"Definir senha\" em Configurações → Equipe, que desbloqueia na hora.",
   },
 ];
