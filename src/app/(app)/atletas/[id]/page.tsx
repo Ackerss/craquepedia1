@@ -25,7 +25,7 @@ import {
 import { getAthleteBundle, getCompany, listPackages, listServices, listUsers, markIntakesSeen } from "@/lib/data";
 import { STAGES } from "@/lib/catalog";
 import { getSport } from "@/lib/sports";
-import { ageFrom, brl, fmtDate, fmtPhone, igHandle, relTime, waLink } from "@/lib/utils";
+import { ageFrom, brl, fmtDate, fmtPhone, igHandle, isMinor, relTime, waLink } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
 import { AIButton, DeleteAthlete, PublicToggle, ResponsibleSelect, StatusSelect, TextStudio } from "@/components/athlete/HubActions";
 import { Gallery, PhotoUpload } from "@/components/athlete/Photos";
@@ -99,24 +99,24 @@ export default async function AthletePage({
               </span>
             ) : null}
           </div>
-          <div className="absolute bottom-3 right-4 hidden gap-1.5 sm:flex">
+          <div className="absolute bottom-3 right-4 flex gap-1.5">
             {[
               { href: `/cv/${a.slug}`, label: "Currículo", icon: FileText },
               { href: `/p/${a.slug}`, label: "Portfólio", icon: Globe },
               { href: `/c/${a.slug}`, label: "Cartão", icon: IdCard },
             ].map((l) => (
-              <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-black/35 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-black/55">
-                <l.icon className="size-3.5" /> {l.label}
+              <a key={l.label} href={l.href} target="_blank" rel="noreferrer" title={l.label} aria-label={l.label} className="inline-flex items-center gap-1.5 rounded-lg bg-black/35 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-black/55">
+                <l.icon className="size-3.5" /> <span className="hidden sm:inline">{l.label}</span>
               </a>
             ))}
           </div>
         </div>
         <div className="flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end">
-          <div className="-mt-14 flex items-end gap-4">
+          <div className="relative z-10 -mt-14 flex items-end gap-4">
             <Avatar name={a.fullName} photoId={a.photoId} size={112} color={sport.color} className="ring-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px]">{a.nickname ? `${a.nickname}` : a.fullName}</h1>
+            <h1 className="break-words text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px]">{a.nickname ? `${a.nickname}` : a.fullName}</h1>
             <p className="text-slate-500">
               {a.nickname ? `${a.fullName} · ` : ""}
               {a.position || sport.name}
@@ -129,13 +129,13 @@ export default async function AthletePage({
               ) : null}
               {a.city ? (
                 <span className="flex items-center gap-1">
-                  <MapPin className="size-4 text-slate-400" /> {a.city}
+                  <MapPin className="size-4 shrink-0 text-slate-400" /> <span className="max-w-[16rem] truncate">{a.city}</span>
                   {a.state ? `/${a.state}` : ""}
                 </span>
               ) : null}
               {a.currentClub ? (
                 <span className="flex items-center gap-1">
-                  <Shield className="size-4 text-slate-400" /> {a.currentClub}
+                  <Shield className="size-4 shrink-0 text-slate-400" /> <span className="max-w-[16rem] truncate">{a.currentClub}</span>
                 </span>
               ) : null}
               {a.heightCm ? (
@@ -213,7 +213,7 @@ export default async function AthletePage({
                       ))}
                     </ul>
                     <div className="mt-3">
-                      <RequestDataButton athleteId={a.id} name={a.fullName} phone={a.phone} sport={a.sport} missing={a.aiMissing} />
+                      <RequestDataButton athleteId={a.id} name={a.fullName} phone={isMinor(a.birthDate) ? a.guardianPhone || a.phone : a.phone || a.guardianPhone} sport={a.sport} missing={a.aiMissing} />
                     </div>
                   </div>
                 ) : null}
@@ -236,7 +236,7 @@ export default async function AthletePage({
               <h2 className="section-title mb-3">Biografia</h2>
               {a.bioShort ? <p className="mb-3 text-[15px] font-medium italic text-ink-900">&ldquo;{a.bioShort}&rdquo;</p> : null}
               {a.bio ? (
-                <p className="whitespace-pre-line leading-relaxed text-slate-700">{a.bio}</p>
+                <p className="whitespace-pre-line break-words leading-relaxed text-slate-700">{a.bio}</p>
               ) : (
                 <p className="text-sm text-slate-500">Sem biografia. Use &quot;Organizar com IA&quot; para gerar a partir dos dados.</p>
               )}
@@ -308,7 +308,7 @@ export default async function AthletePage({
             <Readiness athleteId={a.id} r={ready} />
             <section className="card card-pad">
               <h2 className="section-title mb-3">Dados</h2>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
                 {[
                   ["Nascimento", a.birthDate ? `${fmtDate(a.birthDate)}${age !== null ? ` (${age})` : ""}` : null],
                   ["Nacionalidade", [a.nationality, a.secondNationality].filter(Boolean).join(" / ")],
@@ -326,19 +326,19 @@ export default async function AthletePage({
                   .map(([k, v]) => (
                     <div key={k} className="contents">
                       <dt className="text-slate-500">{k}</dt>
-                      <dd className="break-words font-medium text-ink-900">{v}</dd>
+                      <dd className="whitespace-pre-line break-words font-medium text-ink-900">{v}</dd>
                     </div>
                   ))}
               </dl>
               {a.consentAt ? <p className="mt-3 text-xs text-slate-400">Consentimento LGPD em {fmtDate(a.consentAt)}</p> : null}
               <div className="mt-4 border-t border-slate-100 pt-3">
-                <RequestDataButton athleteId={a.id} name={a.fullName} phone={a.phone} sport={a.sport} label="Pedir atualização ao atleta" />
+                <RequestDataButton athleteId={a.id} name={a.fullName} phone={isMinor(a.birthDate) ? a.guardianPhone || a.phone : a.phone || a.guardianPhone} sport={a.sport} label="Pedir atualização ao atleta" />
               </div>
             </section>
             {a.notes ? (
               <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <p className="mb-1 font-semibold">Observações internas</p>
-                <p className="whitespace-pre-line">{a.notes}</p>
+                <p className="whitespace-pre-line break-words">{a.notes}</p>
               </section>
             ) : null}
             <TextStudio id={a.id} phone={a.phone} />
@@ -375,7 +375,7 @@ export default async function AthletePage({
                           d={d}
                           users={users}
                           showAthlete={false}
-                          athlete={{ id: a.id, name: a.nickname || a.fullName, fullName: a.fullName, sport: a.sport, slug: a.slug, phone: a.phone }}
+                          athlete={{ id: a.id, name: a.nickname || a.fullName, fullName: a.guardianPhone && a.guardianName ? a.guardianName : a.fullName, sport: a.sport, slug: a.slug, phone: a.guardianPhone || a.phone }}
                         />
                       ))}
                     </div>

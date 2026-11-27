@@ -4,6 +4,7 @@ import type { ResumeData } from "@/lib/resume-data";
 import { getTemplate, templatesFor } from "@/lib/templates";
 import { ResumeDocument } from "./Templates";
 import { PrintButton } from "./PrintButton";
+import { FitA4 } from "./FitA4";
 
 export function ResumeViewer({
   data,
@@ -28,7 +29,9 @@ export function ResumeViewer({
   if (embed) {
     return (
       <div className="bg-white [&_.print-page]:!shadow-none">
-        <ResumeDocument data={data} template={template} />
+        <FitA4>
+          <ResumeDocument data={data} template={template} />
+        </FitA4>
       </div>
     );
   }
@@ -79,9 +82,11 @@ export function ResumeViewer({
           <PrintButton label={printLabel ?? (en ? "Download PDF" : "Baixar PDF")} />
         </div>
       </div>
-      <div className="flex justify-center overflow-x-auto px-4 py-8 print:block print:p-0">
-        <div className={`origin-top max-[820px]:scale-[0.46] print:scale-100 ${t.pages && t.pages > 1 ? "max-[820px]:-mb-[1250px]" : "max-[820px]:-mb-[600px]"}`}>
-          <ResumeDocument data={data} template={template} />
+      <div className="flex justify-center overflow-x-auto px-4 py-8 print:block print:overflow-visible print:p-0">
+        <div className={`origin-top max-[820px]:scale-[0.46] print:!mb-0 print:scale-100 ${t.pages && t.pages > 1 ? "max-[820px]:-mb-[1250px]" : "max-[820px]:-mb-[600px]"}`}>
+          <FitA4>
+            <ResumeDocument data={data} template={template} />
+          </FitA4>
         </div>
       </div>
       <p className="no-print pb-8 text-center text-xs text-slate-500">

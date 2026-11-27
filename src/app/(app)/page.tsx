@@ -61,7 +61,7 @@ export default async function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-medium capitalize text-slate-500">
+          <p className="text-sm font-medium text-slate-500 first-letter:uppercase">
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" })}
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-ink-900 sm:text-[28px]">
@@ -111,8 +111,8 @@ export default async function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <section className="card xl:col-span-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <section className="card min-w-0 xl:col-span-2">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 font-semibold">
               <CalendarClock className="size-5 text-brand-600" /> Prioridades (atrasadas e próximos 3 dias)
@@ -155,7 +155,7 @@ export default async function Dashboard() {
           )}
         </section>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
         <section className="card">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h2 className="flex items-center gap-2 font-semibold">
@@ -209,7 +209,7 @@ export default async function Dashboard() {
                         </p>
                       </div>
                     </Link>
-                    <FollowUpActions id={f.o.id} athleteId={f.o.athleteId} phone={f.c.phone} message={msg} />
+                    <FollowUpActions id={f.o.id} athleteId={f.o.athleteId} phone={f.c.phone} email={f.c.email} country={f.c.country} message={msg} />
                   </li>
                 );
               })}
@@ -298,9 +298,9 @@ export default async function Dashboard() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {ath.slice(0, 12).map((a) => (
-                <Link key={a.id} href={`/atletas/${a.id}`} className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-3 text-sm hover:bg-slate-50">
+                <Link key={a.id} href={`/atletas/${a.id}`} className="flex max-w-full items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-3 text-sm hover:bg-slate-50">
                   <Avatar name={a.fullName} photoId={a.photoId} size={28} />
-                  {a.nickname || a.fullName.split(" ")[0]}
+                  <span className="max-w-[12rem] truncate">{a.nickname || a.fullName.split(" ")[0]}</span>
                 </Link>
               ))}
             </div>

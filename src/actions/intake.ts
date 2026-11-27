@@ -1,7 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, ilike, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "@/db";
@@ -11,7 +11,9 @@ import { aiAvailable, enrichAthlete, reviewAthlete } from "@/lib/ai";
 import { getAthlete, logActivity, ready, uniqueSlug } from "@/lib/data";
 import { getSport } from "@/lib/sports";
 import { createDeliverablesFor } from "@/lib/work";
-import { fmtDate, int, str } from "@/lib/utils";
+import { checkIntake } from "@/lib/intake-check";
+import { imageMime } from "@/lib/server-utils";
+import { extractLinks, fmtDate, heightCm, onlyDigits, slugify, str, weightKg } from "@/lib/utils";
 
 export async function createIntake(_: unknown, form: FormData) {
   const s = await requireUser();
@@ -40,6 +42,13 @@ export async function deleteIntake(id: string) {
   revalidatePath("/formularios");
 }
 
+/** Posições na ordem em que o atleta marcou (a primeira é a principal). */
+function orderedPositions(form: FormData) {
+  const picked = form.getAll("position").map(String).filter(Boolean);
+  const order = String(form.get("positionOrder") ?? "").split("|").filter((p) => picked.includes(p));
+  return [...new Set([...order, ...picked])].join(", ");
+}
+
 type IntakeResult = { error?: string; ok?: boolean };
 
 /** Público: o atleta envia o formulário. Tudo o que vem depois é automático. */
@@ -50,8 +59,31 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
   if (intake.status !== "aberto") return { error: "Este formulário já foi enviado. Obrigado!" };
   if (form.get("consent") !== "on") return { error: "É preciso aceitar o uso dos dados para continuar." };
 
-  const fullName = str(form.get("fullName"));
-  if (!fullName || fullName.split(/\s+/).length < 2) return { error: "Informe o nome completo." };
+  for (const [k, v] of form.entries()) {
+    if (typeof v === "string" && !k.startsWith("$") && v.length > (k.startsWith("sd_") || ["historico", "conquistas", "numeros", "bio", "playingStyle", "videos"].includes(k) ? 6000 : 300))
+      return { error: "Algum campo ficou comprido demais. Resuma um pouco e envie de novo." };
+  }
+  const problem = checkIntake((n) => String(form.get(n) ?? ""));
+  if (problem) return { error: problem.error };
+
+  // trava: se o mesmo link for enviado duas vezes ao mesmo tempo (duas abas), só o primeiro passa
+  const [locked] = await db
+    .update(intakes)
+    .set({ status: "enviando" })
+    .where(and(eq(intakes.id, intake.id), eq(intakes.status, "aberto")))
+    .returning({ id: intakes.id });
+  if (!locked) return { error: "Este formulário já foi enviado. Obrigado!" };
+  try {
+    return await saveIntake(intake, form);
+  } catch (err) {
+    console.error("[intake]", err);
+    await db.update(intakes).set({ status: "aberto" }).where(eq(intakes.id, intake.id)).catch(() => {});
+    return { error: "Não conseguimos salvar agora. Seus dados continuam aqui: tente enviar de novo em instantes." };
+  }
+}
+
+async function saveIntake(intake: typeof intakes.$inferSelect, form: FormData): Promise<IntakeResult> {
+  const fullName = String(form.get("fullName")).trim().replace(/\s+/g, " ");
   const sport = str(form.get("sport")) ?? intake.sport ?? "outro";
   const def = getSport(sport);
 
@@ -67,7 +99,7 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
     fullName,
     nickname: str(form.get("nickname")),
     sport,
-    position: form.getAll("position").map(String).filter(Boolean).join(", ") || null,
+    position: orderedPositions(form) || null,
     birthDate: str(form.get("birthDate")),
     gender: str(form.get("gender")),
     nationality: str(form.get("nationality")) ?? "Brasileira",
@@ -80,8 +112,8 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
     otherSocials: str(form.get("otherSocials")),
     guardianName: str(form.get("guardianName")),
     guardianPhone: str(form.get("guardianPhone")),
-    heightCm: int(form.get("heightCm")),
-    weightKg: int(form.get("weightKg")),
+    heightCm: heightCm(form.get("heightCm")),
+    weightKg: weightKg(form.get("weightKg")),
     dominantSide: str(form.get("dominantSide")),
     currentClub: str(form.get("currentClub")),
     playingStyle: str(form.get("playingStyle")),
@@ -93,10 +125,7 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
       graduationYear: str(form.get("edu_graduationYear")) ?? undefined,
       english: str(form.get("edu_english")) ?? undefined,
     },
-    videos: String(form.get("videos") ?? "")
-      .split(/\s+/)
-      .filter((u) => /^https?:\/\//.test(u))
-      .map((url, i) => ({ title: `Vídeo ${i + 1}`, url })),
+    videos: extractLinks(String(form.get("videos") ?? "")).map((url, i) => ({ title: `Vídeo ${i + 1}`, url })),
     sportData,
     source: str(form.get("source")),
     notes: [
@@ -104,6 +133,7 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
       ["Conquistas", form.get("conquistas")],
       ["Números", form.get("numeros")],
       ["Objetivo", form.get("objetivo")],
+      ["Vídeos (como o atleta escreveu)", form.get("videos")],
     ]
       .filter(([, v]) => v && String(v).trim())
       .map(([k, v]) => `${k}: ${String(v).trim()}`)
@@ -124,6 +154,14 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
       }),
     );
     const current = await getAthlete(athleteId);
+    // escolaridade: junta com o que já existia (campos que o formulário não tem, como série e GPA, ficam)
+    if (filled.education) filled.education = { ...(current?.education ?? {}), ...Object.fromEntries(Object.entries(values.education ?? {}).filter(([, v]) => v)) };
+    // vídeos: mantém os antigos e acrescenta só os novos
+    if (filled.videos) {
+      const old = current?.videos ?? [];
+      const fresh = (values.videos ?? []).filter((v) => !old.some((o) => o.url === v.url));
+      filled.videos = [...old, ...fresh.map((v, i) => ({ ...v, title: `Vídeo ${old.length + i + 1}` }))];
+    }
     // textos já revisados pela equipe/IA não são trocados pelo texto cru do atleta (o texto novo vai para as observações)
     const extra: string[] = [];
     for (const k of ["bio", "playingStyle"] as const) {
@@ -138,28 +176,51 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
     if (current?.status && current.status !== "lead") delete filled.status;
     await db.update(athletes).set({ ...filled, updatedAt: new Date() }).where(eq(athletes.id, athleteId));
   } else {
-    const slug = await uniqueSlug(values.nickname ? `${values.nickname} ${fullName.split(" ").slice(-1)[0]}` : fullName);
-    const [row] = await db
-      .insert(athletes)
-      .values({ ...(values as NewAthlete), slug, responsibleId: intake.createdBy })
-      .returning({ id: athletes.id });
+    // endereço público: apelido + sobrenome (sem repetir o sobrenome se o apelido já tiver)
+    const last = fullName.split(" ").slice(-1)[0];
+    const nick = values.nickname ?? "";
+    const base = nick ? (slugify(nick).split("-").includes(slugify(last)) ? nick : `${nick} ${last}`) : fullName;
+    // dois envios com o mesmo nome no mesmo segundo podem disputar o mesmo endereço: tenta de novo com outro
+    let row: { id: string } | undefined;
+    for (let attempt = 0; !row; attempt++) {
+      const slug = await uniqueSlug(attempt ? `${base} ${attempt + 1}` : base);
+      try {
+        [row] = await db
+          .insert(athletes)
+          .values({ ...(values as NewAthlete), slug, responsibleId: intake.createdBy })
+          .returning({ id: athletes.id });
+      } catch (e) {
+        if (attempt >= 3 || !String((e as Error)?.message ?? e).includes("slug")) throw e;
+      }
+    }
     athleteId = row.id;
+    // mesmo atleta mandando de novo por outro link? avisa a equipe (não junta sozinho)
+    const tail = onlyDigits(values.phone).slice(-8);
+    const twins = await db
+      .select({ id: athletes.id, fullName: athletes.fullName, phone: athletes.phone })
+      .from(athletes)
+      .where(and(ne(athletes.id, row.id), or(ilike(athletes.fullName, fullName), tail.length === 8 ? ilike(athletes.phone, `%${tail.slice(0, 4)}%${tail.slice(4)}%`) : undefined)));
+    const twin = twins.find((t) => t.fullName.toLowerCase() === fullName.toLowerCase() || onlyDigits(t.phone).endsWith(tail));
+    if (twin) await logActivity("formulario", `Atenção: ${fullName} pode ser o mesmo atleta já cadastrado como ${twin.fullName}. Confira se não ficou duplicado.`, row.id, null);
   }
 
   // Fotos
   const photos = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0).slice(0, 8);
   const photoIds: string[] = [];
-  for (const [i, f] of photos.entries()) {
-    if (!f.type.startsWith("image/") || f.size > 6 * 1024 * 1024) continue;
+  for (const f of photos) {
+    if (f.size > 6 * 1024 * 1024) continue;
+    const data = Buffer.from(await f.arrayBuffer());
+    const mime = imageMime(data);
+    if (!mime) continue; // não é uma imagem que o navegador consiga mostrar
     const [fr] = await db
       .insert(files)
       .values({
         athleteId,
-        kind: i === 0 ? "photo" : "gallery",
+        kind: photoIds.length === 0 ? "photo" : "gallery",
         name: f.name,
-        mime: f.type,
+        mime,
         size: f.size,
-        data: Buffer.from(await f.arrayBuffer()),
+        data,
       })
       .returning({ id: files.id });
     photoIds.push(fr.id);
@@ -180,7 +241,7 @@ export async function submitIntake(token: string, _: unknown, form: FormData): P
 
   await db
     .update(intakes)
-    .set({ status: "recebido", athleteId, payload: raw, photoIds, submittedAt: new Date(), clientName: fullName })
+    .set({ status: "recebido", athleteId, sport, payload: raw, photoIds, submittedAt: new Date(), clientName: fullName })
     .where(eq(intakes.id, intake.id));
   await logActivity("formulario", `${fullName} enviou o formulário`, athleteId, null);
 

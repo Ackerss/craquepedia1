@@ -297,3 +297,12 @@ export const SPORTS: Sport[] = [
 export function getSport(slug?: string | null): Sport {
   return SPORTS.find((s) => s.slug === slug) ?? SPORTS[SPORTS.length - 1];
 }
+
+/** Esporte do atleta para mostrar em materiais: em "Outro esporte" usa o nome que o atleta escreveu (ex.: Esgrima). */
+export function sportOf(a: { sport?: string | null; sportData?: Record<string, string> | null }): Sport {
+  const def = getSport(a.sport);
+  const custom = def.slug === "outro" ? a.sportData?.esporte_nome?.trim() : "";
+  if (!custom) return def;
+  const name = custom.charAt(0).toUpperCase() + custom.slice(1);
+  return { ...def, name, nameEn: name, fields: def.fields.filter((f) => f.key !== "esporte_nome") };
+}

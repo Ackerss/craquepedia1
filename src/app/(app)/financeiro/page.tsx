@@ -80,12 +80,15 @@ export default async function Financeiro() {
             <p className="px-5 py-10 text-center text-sm text-slate-500">Nada pendente. 🎉</p>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {open.map(({ o, athleteName, athleteId, athletePhone }) => {
+              {open.map(({ o, athleteName, athleteId, athletePhone, guardianName, guardianPhone }) => {
                 const n = daysUntil(o.dueDate);
+                // quem paga: o responsável (quando tem), senão o próprio atleta
+                const payPhone = guardianPhone || athletePhone;
+                const payName = guardianPhone && guardianName ? guardianName : athleteName;
                 const remaining = o.totalCents - o.paidCents;
                 return (
                   <li key={o.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-[12rem] flex-1">
                       <Link href={`/atletas/${athleteId}?tab=financeiro`} className="font-medium text-ink-900 hover:underline">
                         {athleteName}
                       </Link>
@@ -95,8 +98,8 @@ export default async function Financeiro() {
                       </p>
                     </div>
                     {n !== null && n < 0 ? <Badge color="#dc2626">vencido</Badge> : null}
-                    {athletePhone ? (
-                      <a className="btn-ghost btn-sm" target="_blank" rel="noreferrer" href={waLink(athletePhone, chargeMessage(athleteName, remaining, o.title, company.pix))}>
+                    {payPhone ? (
+                      <a className="btn-ghost btn-sm" target="_blank" rel="noreferrer" href={waLink(payPhone, chargeMessage(payName, remaining, o.title, company.pix))}>
                         <MessageCircle className="size-4" /> Cobrar
                       </a>
                     ) : null}

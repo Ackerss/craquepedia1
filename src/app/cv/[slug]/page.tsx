@@ -19,6 +19,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: `${en ? "Resume" : "Currículo"} ${a.nickname || a.fullName}`,
     description: (en ? a.bioEn : a.bioShort) ?? undefined,
     robots: { index: false, follow: false },
+    openGraph: { title: `${en ? "Resume" : "Currículo"} ${a.nickname || a.fullName}`, images: a.photoId ? [`/api/files/${a.photoId}`] : [] },
   };
 }
 

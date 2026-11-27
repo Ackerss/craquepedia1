@@ -8,7 +8,7 @@ import { db } from "@/db";
 import { files } from "@/db/schema";
 import { getAthlete, getCompany, ready } from "@/lib/data";
 import { getSession } from "@/lib/auth";
-import { getSport } from "@/lib/sports";
+import { sportOf } from "@/lib/sports";
 import { parseRecords } from "@/lib/resume-data";
 import { baseUrl, qrSvg } from "@/lib/server-utils";
 import { ageFrom, igHandle } from "@/lib/utils";
@@ -44,6 +44,22 @@ async function sportImage(slug: string) {
 }
 
 
+/** Tira emoji e caracteres fora do alfabeto latino (a fonte da arte não tem). */
+function plain(s: string) {
+  return s.replace(/[^\p{Script=Latin}\p{Script=Common}\p{M}]|\p{Extended_Pictographic}|[\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
+}
+function plainDeep<T>(v: T): T {
+  if (typeof v === "string") return plain(v) as T;
+  if (Array.isArray(v)) return v.map(plainDeep) as T;
+  if (v && typeof v === "object" && !(v instanceof Date) && !Buffer.isBuffer(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) as T;
+  return v;
+}
+/** Corta texto longo com reticências (a arte tem tamanho fixo). */
+const cut = (s: string | null | undefined, n: number) => {
+  const t = (s ?? "").trim();
+  return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
+};
+
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return new Response("unauthorized", { status: 401 });
@@ -53,10 +69,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const story = url.searchParams.get("fmt") === "story";
   const download = url.searchParams.get("download") === "1";
   await ready();
-  const a = await getAthlete(id);
-  if (!a) return new Response("not found", { status: 404 });
-  const sport = getSport(a.sport);
-  const [company, photo, cover, art, fnts, base] = await Promise.all([getCompany(), fileData(a.photoId), fileData(a.coverId), sportImage(sport.slug), fonts(), baseUrl()]);
+  const raw = await getAthlete(id);
+  if (!raw) return new Response("not found", { status: 404 });
+  // emoji e letras de outros alfabetos dependem de download externo na geração da imagem e podem derrubar a arte: ficam de fora
+  const a = plainDeep(raw);
+  const sport = sportOf(a);
+  const [companyRaw, photo, cover, art, fnts, base] = await Promise.all([getCompany(), fileData(a.photoId), fileData(a.coverId), sportImage(sport.slug), fonts(), baseUrl()]);
+  const company = plainDeep(companyRaw);
   const W = 1080;
   const H = story ? 1920 : 1350;
   const accent = a.accent || sport.color;
@@ -106,17 +125,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
             {photo ? <img src={photo} style={{ width: 210, height: 210, borderRadius: 999, objectFit: "cover", border: `8px solid ${accent}` }} /> : null}
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 92, lineHeight: 1, color: "#fff", textTransform: "uppercase" }}>{name}</div>
-              <div style={{ display: "flex", fontSize: 32, color: "rgba(255,255,255,.75)", marginTop: 10 }}>{[pos, a.currentClub].filter(Boolean).join(" · ")}</div>
+              <div style={{ display: "flex", fontSize: 32, color: "rgba(255,255,255,.75)", marginTop: 10 }}>{cut([pos, a.currentClub].filter(Boolean).join(" · "), 40)}</div>
             </div>
           </div>
           <div style={{ display: "flex", fontSize: 30, fontWeight: 800, letterSpacing: 8, color: accent, marginTop: story ? 120 : 70, textTransform: "uppercase" }}>
-            {records.length ? "Melhores marcas" : "Números da temporada"}
+            {records.length ? "Melhores marcas" : "Números"}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginTop: 28 }}>
             {items.map((s, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", width: (W - 144 - 24) / 2, padding: "30px 34px", borderRadius: 32, background: i === 0 ? accent : "rgba(255,255,255,.08)", border: "2px solid rgba(255,255,255,.12)" }}>
-                <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: 100, lineHeight: 1, color: "#fff" }}>{s.value}</div>
-                <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: "rgba(255,255,255,.8)", marginTop: 10, textTransform: "uppercase", letterSpacing: 2 }}>{s.label}</div>
+                <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: String(s.value).length > 7 ? 64 : 100, lineHeight: 1, color: "#fff" }}>{cut(String(s.value), 12)}</div>
+                <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: "rgba(255,255,255,.8)", marginTop: 10, textTransform: "uppercase", letterSpacing: 2 }}>{cut(s.label, 28)}</div>
               </div>
             ))}
           </div>
@@ -140,7 +159,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
             {list.map((c, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 26, padding: "22px 28px", borderRadius: 26, background: "rgba(255,255,255,.07)", border: "2px solid rgba(255,255,255,.1)" }}>
                 <div style={{ display: "flex", width: 22, height: 22, borderRadius: 999, background: /vice|prata|2º/i.test(c.title) ? "#cbd5e1" : /bronze|3º/i.test(c.title) ? "#cd7f32" : "#f5b400" }} />
-                <div style={{ display: "flex", flex: 1, fontSize: 34, fontWeight: 600, color: "#fff" }}>{c.title}</div>
+                <div style={{ display: "flex", flex: 1, fontSize: 34, fontWeight: 600, color: "#fff" }}>{cut(c.title, 60)}</div>
                 <div style={{ display: "flex", fontFamily: "Oswald", fontSize: 34, fontWeight: 500, color: "rgba(255,255,255,.6)" }}>{c.year}</div>
               </div>
             ))}
@@ -186,7 +205,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       </>
     );
   } else {
-    const facts = [age !== null ? [`${age}`, "anos"] : null, a.heightCm ? [(a.heightCm / 100).toFixed(2).replace(".", ","), "metros"] : null, a.weightKg ? [`${a.weightKg}`, "kg"] : null, a.stats[0] ? [a.stats[0].value, a.stats[0].label] : null].filter(Boolean) as string[][];
+    const facts = [age !== null ? [`${age}`, "anos"] : null, a.heightCm ? [(a.heightCm / 100).toFixed(2).replace(".", ","), "metros"] : null, a.weightKg ? [`${a.weightKg}`, "kg"] : null, a.stats[0] ? [cut(a.stats[0].value, 8), cut(a.stats[0].label, 16)] : null].filter(Boolean) as string[][];
     body = (
       <>
         <Bg img={hero} />
@@ -196,7 +215,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           <div style={{ display: "flex", flex: 1 }} />
           <Chip>{sport.name}</Chip>
           <div style={{ display: "flex", fontFamily: "Oswald", fontWeight: 700, fontSize: name.length > 14 ? 120 : 160, lineHeight: 0.9, color: "#fff", textTransform: "uppercase", marginTop: 22 }}>{name}</div>
-          <div style={{ display: "flex", fontSize: 38, fontWeight: 600, color: "rgba(255,255,255,.85)", marginTop: 16 }}>{[pos, a.currentClub].filter(Boolean).join("  ·  ")}</div>
+          <div style={{ display: "flex", fontSize: 38, fontWeight: 600, color: "rgba(255,255,255,.85)", marginTop: 16 }}>{cut([pos, a.currentClub].filter(Boolean).join("  ·  "), 44)}</div>
           {a.bioShort ? <div style={{ display: "flex", fontSize: 32, color: "rgba(255,255,255,.7)", marginTop: 18, lineHeight: 1.35 }}>{`“${a.bioShort}”`}</div> : null}
           <div style={{ display: "flex", gap: 18, marginTop: 40 }}>
             {facts.map(([v, l]) => (

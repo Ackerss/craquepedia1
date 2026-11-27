@@ -69,7 +69,7 @@ export default async function Entregas({ searchParams }: { searchParams: Promise
                       d={r.d}
                       users={users}
                       compact={st.key === "entregue"}
-                      athlete={{ id: r.d.athleteId, name: r.athleteNickname || r.athleteName, sport: r.athleteSport, slug: r.athleteSlug, phone: r.athletePhone, fullName: r.athleteName }}
+                      athlete={{ id: r.d.athleteId, name: r.athleteNickname || r.athleteName, sport: r.athleteSport, slug: r.athleteSlug, phone: r.guardianPhone || r.athletePhone, fullName: r.guardianPhone && r.guardianName ? r.guardianName : r.athleteName }}
                     />
                   ))}
                   {col.length === 0 ? <p className="px-1 py-6 text-center text-xs text-slate-400">vazio</p> : null}

@@ -25,7 +25,8 @@ export function ContractButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [pkg, setPkg] = useState<string>(packages.find((p) => p.highlight)?.id ?? packages[0]?.id ?? "");
+  const defaultPkg = packages.find((p) => p.highlight)?.id ?? packages[0]?.id ?? "";
+  const [pkg, setPkg] = useState<string>(defaultPkg);
   const [extra, setExtra] = useState<string[]>([]);
   const [state, action, isPending] = useActionState(
     async (prev: unknown, fd: FormData) => {
@@ -41,7 +42,16 @@ export function ContractButton({
 
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => {
+          // cada contrato novo começa limpo (sem o que foi escolhido no anterior)
+          setPkg(defaultPkg);
+          setExtra([]);
+          setOpen(true);
+        }}
+      >
         <Plus className="size-4" /> {label}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Contratar serviços" wide>

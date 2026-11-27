@@ -11,7 +11,8 @@ export function brl(cents: number | null | undefined) {
 export function parseBRL(v: FormDataEntryValue | null | undefined): number {
   if (!v) return 0;
   const s = String(v).replace(/[^\d,.-]/g, "");
-  const normalized = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s;
+  // "1.250,50" → 1250.50 · "1.250" (ponto de milhar) → 1250 · "1250.50" → 1250.50
+  const normalized = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^-?\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s;
   const n = Number(normalized);
   return Number.isFinite(n) ? Math.round(n * 100) : 0;
 }
@@ -23,6 +24,27 @@ export function ageFrom(birth?: string | null): number | null {
   let a = ty - by;
   if (tm < bm || (tm === bm && td < bd)) a--;
   return a >= 0 && a < 120 ? a : null;
+}
+
+/** Maior valor aceito num campo de dinheiro (R$ 1 milhão). */
+export const MAX_CENTS = 100_000_000;
+
+/** Confere um campo de dinheiro digitado. Devolve a mensagem de erro, ou null se estiver certo. */
+export function moneyError(v: FormDataEntryValue | null | undefined, label = "valor", allowZero = true) {
+  const raw = String(v ?? "").trim();
+  if (!raw) return allowZero ? null : `Informe o ${label}.`;
+  if (!/\d/.test(raw)) return `O ${label} precisa ser um número (ex.: 1.250,00).`;
+  const c = parseBRL(raw);
+  if (c < 0 || raw.includes("-")) return `O ${label} não pode ser negativo.`;
+  if (!allowZero && c === 0) return `Informe o ${label}.`;
+  if (c > MAX_CENTS) return `O ${label} passou do limite (R$ 1.000.000,00). Confira os zeros.`;
+  return null;
+}
+
+/** Menor de 18 anos (pela data de nascimento). */
+export function isMinor(birth?: string | null) {
+  const a = ageFrom(birth);
+  return a !== null && a < 18;
 }
 
 /** Dias até o próximo aniversário (0 = hoje). */
@@ -116,15 +138,25 @@ export function onlyDigits(s?: string | null) {
   return (s ?? "").replace(/\D/g, "");
 }
 
-export function waLink(phone?: string | null, text?: string) {
+/** Número brasileiro só com DDD + número (tira +55, 0 de operadora/DDD na frente). Estrangeiro fica como está. */
+function brDigits(phone?: string | null) {
   let d = onlyDigits(phone);
-  if (d && d.length <= 11) d = "55" + d;
+  if (/^0\d{10,12}$/.test(d)) d = d.replace(/^0+/, "").replace(/^(\d{2})(\d{2})(\d{8,9})$/, (m, op, ddd, n) => (m.length > 11 ? ddd + n : m));
+  if (/^55\d{10,11}$/.test(d)) d = d.slice(2);
+  return d;
+}
+
+/** Link do WhatsApp. `country` (do contato): fora do Brasil o número já vem com o código do país e não recebe o 55. */
+export function waLink(phone?: string | null, text?: string, country?: string | null) {
+  const abroad = !!country && !/^(bra|brasil|brazil)/i.test(country.trim());
+  let d = abroad ? onlyDigits(phone).replace(/^00/, "") : brDigits(phone);
+  if (d && d.length <= 11 && !abroad) d = "55" + d;
   const q = text ? `?text=${encodeURIComponent(text)}` : "";
   return d ? `https://wa.me/${d}${q}` : `https://wa.me/${q}`;
 }
 
 export function fmtPhone(p?: string | null) {
-  const d = onlyDigits(p);
+  const d = brDigits(p);
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return p ?? "";
@@ -164,6 +196,45 @@ export function int(v: FormDataEntryValue | null | undefined) {
   return s ? Number(s) : null;
 }
 
+function decimal(v: FormDataEntryValue | null | undefined) {
+  const m = (v ?? "").toString().replace(",", ".").match(/\d+(\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
+
+/** Altura em cm. Aceita "178", "1,78", "1.78 m" ou "178cm". Valores fora de 50–250 cm são descartados. */
+export function heightCm(v: FormDataEntryValue | null | undefined) {
+  const n = decimal(v);
+  if (n === null) return null;
+  const cm = Math.round(n < 3 ? n * 100 : n);
+  return cm >= 50 && cm <= 250 ? cm : null;
+}
+
+/** Peso em kg (arredondado). Aceita "72", "72,5" ou "72 kg". Valores fora de 15–250 kg são descartados. */
+export function weightKg(v: FormDataEntryValue | null | undefined) {
+  const n = decimal(v);
+  if (n === null) return null;
+  const kg = Math.round(n);
+  return kg >= 15 && kg <= 250 ? kg : null;
+}
+
+/**
+ * Acha links num texto livre ("Meus gols: youtu.be/x (2024), https://...").
+ * Aceita link sem "https://" de sites conhecidos e tira pontuação colada no fim.
+ */
+export function extractLinks(text: string) {
+  const re = /(?:https?:\/\/|www\.|(?:youtu\.be|(?:m\.)?youtube\.com|instagram\.com|vimeo\.com|tiktok\.com|drive\.google\.com|facebook\.com|fb\.watch)\/)[^\s<>"']+/gi;
+  const out: string[] = [];
+  for (const m of text.match(re) ?? []) {
+    // "link1,https://link2" colados: separa
+    for (const part of m.split(/,(?=https?:\/\/)/)) {
+      let u = part.replace(/[.,;:!?)\]]+$/, "");
+      if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
+      if (!out.includes(u)) out.push(u);
+    }
+  }
+  return out;
+}
+
 /** Milissegundos desde a data (helper fora do render para evitar Date.now em componentes). */
 export function msSince(v: string | Date) {
   return Date.now() - new Date(v).getTime();
@@ -184,16 +255,25 @@ function ate999(n: number): string {
   return parts.join(" e ");
 }
 
-/** Valor em reais por extenso (até 999.999,99). Ex.: 1250,50 → "mil duzentos e cinquenta reais e cinquenta centavos". */
+/** Valor em reais por extenso (até 999.999.999,99). Ex.: 1250,50 → "mil duzentos e cinquenta reais e cinquenta centavos". */
 export function extenso(cents: number) {
   const reais = Math.floor(cents / 100);
   const cent = cents % 100;
-  const mil = Math.floor(reais / 1000);
+  const mi = Math.floor(reais / 1_000_000);
+  const mil = Math.floor((reais % 1_000_000) / 1000);
   const resto = reais % 1000;
-  let txt = "";
-  if (mil) txt = (mil === 1 ? "mil" : ate999(mil) + " mil") + (resto ? (resto < 100 || resto % 100 === 0 ? " e " : " ") + ate999(resto) : "");
-  else txt = ate999(resto);
-  const r = reais ? `${txt} ${reais === 1 ? "real" : "reais"}` : "";
+  const joint = (n: number) => (n < 100 || n % 100 === 0 ? " e " : " ");
+  let low = "";
+  if (mil) low = (mil === 1 ? "mil" : ate999(mil) + " mil") + (resto ? joint(resto) + ate999(resto) : "");
+  else low = ate999(resto);
+  let txt = low;
+  if (mi) {
+    const below = reais % 1_000_000;
+    txt = (mi === 1 ? "um milhão" : ate999(mi) + " milhões") + (below ? (mil && !resto ? " e " : below < 1000 ? joint(below) : " ") + low : "");
+  }
+  // "um milhão de reais" (valor redondo em milhões leva "de")
+  const de = mi && reais % 1_000_000 === 0 ? " de" : "";
+  const r = reais ? `${txt}${de} ${reais === 1 ? "real" : "reais"}` : "";
   const c = cent ? `${ate999(cent)} ${cent === 1 ? "centavo" : "centavos"}` : "";
   return [r, c].filter(Boolean).join(" e ") || "zero reais";
 }

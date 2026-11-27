@@ -114,11 +114,11 @@ function IssueCard({ athleteId, issue, index }: { athleteId: string; issue: Revi
 export function ReviewPanel({ athleteId, review, reviewedAt, stale }: { athleteId: string; review: AIReview | null; reviewedAt: string | null; stale: boolean }) {
   if (!review) {
     return (
-      <section className="card card-pad flex flex-col gap-3 sm:flex-row sm:items-center">
+      <section className="card card-pad flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
           <ScanSearch className="size-5" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-[14rem] flex-1">
           <h2 className="font-semibold text-ink-900">Revisão final com IA</h2>
           <p className="text-sm text-slate-500">Antes de entregar, a IA confere português, inglês, datas, exageros e o que os clubes mais pedem nesta modalidade.</p>
         </div>
@@ -131,12 +131,12 @@ export function ReviewPanel({ athleteId, review, reviewedAt, stale }: { athleteI
   const color = review.score >= 85 ? "#16a34a" : review.score >= 60 ? "#d97706" : "#dc2626";
   return (
     <section className="card overflow-hidden">
-      <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex size-16 shrink-0 flex-col items-center justify-center rounded-2xl text-white" style={{ background: color }}>
           <span className="text-2xl font-bold leading-none">{review.score}</span>
           <span className="text-[10px] font-semibold uppercase opacity-90">nota</span>
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[14rem] flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold text-ink-900">Revisão final com IA</h2>
             <span className={`badge ${V.cls}`}>{V.label}</span>

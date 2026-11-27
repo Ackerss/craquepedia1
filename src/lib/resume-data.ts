@@ -1,6 +1,6 @@
 import "server-only";
 import type { Achievement, Athlete, CareerItem, StatItem } from "@/db/schema";
-import { getSport } from "./sports";
+import { sportOf } from "./sports";
 import { ageFrom, fileUrl, fmtDate, fmtDateEn, fmtPhone, igHandle } from "./utils";
 import { baseUrl, qrSvg } from "./server-utils";
 import { getCompany, listGallery } from "./data";
@@ -41,16 +41,106 @@ const EN: Record<string, string> = {
   Japonesa: "Japanese",
   Masculino: "Male",
   Feminino: "Female",
+  "Armador (PG)": "Point Guard (PG)",
+  "Ala-Armador (SG)": "Shooting Guard (SG)",
+  "Ala (SF)": "Small Forward (SF)",
+  "Ala-Pivô (PF)": "Power Forward (PF)",
+  "Pivô (C)": "Center (C)",
+  "Armador Central": "Centre Back",
+  "Armador Esquerdo": "Left Back",
+  "Armador Direito": "Right Back",
+  "Provas principais": "Main events",
+  "Corrida de Rua": "Road Running",
+  Ultramaratona: "Ultramarathon",
+  "Meia Maratona": "Half Marathon",
+  Maratona: "Marathon",
+  Livre: "Freestyle",
+  Costas: "Backstroke",
+  Peito: "Breaststroke",
+  Borboleta: "Butterfly",
+  Medley: "Individual Medley",
+  "Águas abertas": "Open water",
+  Judô: "Judo",
+  Karatê: "Karate",
+  Boxe: "Boxing",
+  Ortodoxa: "Orthodox",
+  "Canhota (Southpaw)": "Southpaw",
+  "Fundo de quadra": "Baseliner",
+  "Saque e voleio": "Serve and volley",
+  "Contra-atacante": "Counterpuncher",
+  "Uma mão": "One-handed",
+  "Duas mãos": "Two-handed",
+  Artística: "Artistic",
+  Rítmica: "Rhythmic",
+  Trampolim: "Trampoline",
+  Acrobática: "Acrobatic",
+  Estrada: "Road",
+  Pista: "Track",
+  "Maratona MTB": "MTB Marathon",
+  "Ondas grandes": "Big wave",
+  Quadra: "Indoor",
+  Praia: "Beach",
+  Ambos: "Both",
+  Ambas: "Both",
+  "Curta (25m)": "Short course (25m)",
+  "Longa (50m)": "Long course (50m)",
+  Português: "Portuguese",
+  Inglês: "English",
+  Espanhol: "Spanish",
+  Italiano: "Italian",
+  Francês: "French",
+  Alemão: "German",
+  Básico: "Basic",
+  Intermediário: "Intermediate",
+  Avançado: "Advanced",
+  Fluente: "Fluent",
+  Nativo: "Native",
+  Americana: "American",
+  Argentina: "Argentinian",
+  Francesa: "French",
+  Jogos: "Matches",
+  Gols: "Goals",
+  Assistências: "Assists",
+  "Assistências por jogo": "Assists per game",
+  "Minutos jogados": "Minutes played",
+  Títulos: "Titles",
+  Defesas: "Saves",
+  "Jogos sem sofrer gol": "Clean sheets",
+  Finalizações: "Shots",
+  Bloqueios: "Blocks",
+  Pontos: "Points",
+  "Pontos por jogo": "Points per game",
+  "Rebotes por jogo": "Rebounds per game",
+  "Aproveitamento 3pts (%)": "3PT %",
+  "Recepção (%)": "Reception %",
+  Medalhas: "Medals",
+  "Melhor marca": "Personal best",
+  "Melhor nota": "Best score",
+  "Melhor resultado": "Best result",
+  "Melhor tempo": "Best time",
+  "Recorde pessoal": "Personal record",
+  "Ranking nacional": "National ranking",
+  Vitórias: "Wins",
+  "Vitórias na temporada": "Season wins",
+  Nocautes: "Knockouts",
+  Pódios: "Podiums",
+  Índice: "Qualifying standard",
+  "Cartel (V-D-E)": "Record (W-L-D)",
   Atual: "Present",
   atual: "present",
 };
 
+/** "Meia-atacante" = "Meia Atacante" = "meia atacante" */
+const norm = (s: string) => s.trim().toLowerCase().replace(/[-\s]+/g, " ");
+const EN_NORM: Record<string, string> = Object.fromEntries(Object.entries(EN).map(([k, v]) => [norm(k), v]));
+
 export function tr(v: string | null | undefined, lang: "pt" | "en") {
   if (!v) return "";
   if (lang === "pt") return v;
+  // separa por vírgula só entre palavras ("2,15 m" e "100,5 kg" continuam inteiros)
   return v
-    .split(/\s*,\s*/)
-    .map((p) => EN[p] ?? p)
+    .split(/\s*,\s*(?=[^\d\s])/)
+    .map((p) => EN[p] ?? EN_NORM[norm(p)] ?? p)
     .join(", ")
     .replace(/\bAtual\b/g, "Present");
 }
@@ -237,9 +327,15 @@ export function parseRecords(txt?: string | null): RecordItem[] {
         extra = par[1];
         l = l.slice(0, par.index).trim();
       }
-      const m = l.match(/^(.+?)\s*(?::|\s[-–—]\s|=)\s*(.+)$/);
-      if (!m) return { event: l, mark: "", extra };
-      const [mark, ...rest] = m[2].split(/\s[-–—|]\s/);
+      // separadores: "prova: marca", "prova - marca", "prova = marca" ou "prova, marca, ano" (o ":" de um tempo como 33:58 não conta)
+      const m = l.match(/^(.+?)\s*(?:(?<!\d):(?!\d)|\s[-–—]\s|=|,\s+)\s*(.+)$/);
+      if (!m) {
+        // sem separador: "42K 2:38:10 Maratona de Porto Alegre 2025" → prova 42K, marca 2:38:10
+        const t = l.match(/^(.+?)\s+(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?|\d+[.,]\d+\s*(?:s|m|kg)?)(?:\s+(.+))?$/);
+        if (t) return { event: t[1].trim(), mark: t[2].trim(), extra: [t[3], extra].filter(Boolean).join(" · ") || undefined };
+        return { event: l, mark: "", extra };
+      }
+      const [mark, ...rest] = m[2].split(/\s[-–—|]\s|,\s+/);
       return { event: m[1].trim(), mark: mark.trim(), extra: [rest.join(" · "), extra].filter(Boolean).join(" · ") || undefined };
     })
     .slice(0, 10);
@@ -254,8 +350,23 @@ const METRIC_FIELDS: Record<string, { pt: string; en: string; unit?: string }> =
   ftp: { pt: "FTP", en: "FTP" },
 };
 
+const POSITION_LABEL_EN: Record<string, string> = {
+  Posição: "Position",
+  Modalidade: "Discipline",
+  "Provas principais": "Events",
+  "Estilo principal": "Main stroke",
+  "Estilo de jogo": "Playing style",
+  "Modalidade / Função": "Discipline / Role",
+};
+
+/** Altura em pés e polegadas (182 cm → 6'0"). */
+function feet(cm: number) {
+  const inches = Math.round(cm / 2.54);
+  return `${Math.floor(inches / 12)}'${inches % 12}"`;
+}
+
 export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<ResumeData> {
-  const sport = getSport(a.sport);
+  const sport = sportOf(a);
   const L = LABELS[lang];
   const base = await baseUrl();
   const portfolioUrl = `${base}/p/${a.slug}`;
@@ -269,7 +380,7 @@ export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<Re
     { label: L.graduation, value: edu.graduationYear ?? "" },
     { label: en ? "Grade" : "Série", value: edu.grade ?? "" },
     { label: L.gpa, value: edu.gpa ?? "" },
-    { label: L.english, value: edu.english ?? "" },
+    { label: L.english, value: tr(edu.english, lang) },
     { label: L.sat, value: edu.satAct ?? "" },
   ].filter((e) => e.value);
 
@@ -282,31 +393,32 @@ export async function buildResumeData(a: Athlete, lang: "pt" | "en"): Promise<Re
     sportName: en ? sport.nameEn : sport.name,
     sportEmoji: sport.emoji,
     sportSlug: sport.slug,
-    positionLabel: en ? (sport.positionLabel === "Posição" ? "Position" : sport.positionLabel === "Modalidade" ? "Discipline" : "Events") : sport.positionLabel,
+    positionLabel: en ? (POSITION_LABEL_EN[sport.positionLabel] ?? "Position") : sport.positionLabel,
     position: tr(a.position, lang),
     age,
     birth: en ? fmtDateEn(a.birthDate) : fmtDate(a.birthDate),
     nationality: [tr(a.nationality, lang), tr(a.secondNationality, lang)].filter(Boolean).join(" / "),
     city: [a.city, a.state].filter(Boolean).join(" - ") + (en && a.city ? ", Brazil" : ""),
-    height: a.heightCm ? (en ? `${a.heightCm} cm (${Math.floor(a.heightCm / 30.48)}'${Math.round((a.heightCm / 2.54) % 12)}")` : `${(a.heightCm / 100).toFixed(2).replace(".", ",")} m`) : "",
+    height: a.heightCm ? (en ? `${a.heightCm} cm (${feet(a.heightCm)})` : `${(a.heightCm / 100).toFixed(2).replace(".", ",")} m`) : "",
     weight: a.weightKg ? (en ? `${a.weightKg} kg (${Math.round(a.weightKg * 2.2046)} lbs)` : `${a.weightKg} kg`) : "",
     sideLabel: en ? (sport.sideLabel?.includes("Mão") ? "Dominant hand" : sport.sideLabel?.includes("Perna") ? "Preferred foot" : "Stance") : (sport.sideLabel ?? ""),
     side: tr(a.dominantSide, lang),
     clubLabel: en ? "Current club" : sport.clubLabel,
     club: a.currentClub ?? "",
-    bio: (en ? a.bioEn : a.bio) || (en ? "" : "") || "",
+    bio: (en ? a.bioEn : a.bio) || "",
     bioShort: en ? "" : (a.bioShort ?? ""),
     style: (en ? a.playingStyleEn : a.playingStyle) ?? "",
     achievements: a.achievements ?? [],
     career: (a.career ?? []).map((c) => ({ ...c, period: tr(c.period, lang) })),
-    stats: a.stats ?? [],
+    stats: (a.stats ?? []).map((x) => ({ ...x, label: tr(x.label, lang) })),
     details: sport.fields
       .filter((f) => a.sportData?.[f.key] && f.type !== "textarea")
-      .map((f) => [(en ? f.labelEn : f.label).replace(/\s*\(.*\)\s*$/, ""), a.sportData[f.key]] as [string, string]),
+      .map((f) => [(en ? f.labelEn : f.label).replace(/\s*\(.*\)\s*$/, ""), tr(a.sportData[f.key], lang)] as [string, string]),
     education,
-    languages: a.languages ?? "",
-    phone: fmtPhone(a.phone),
-    email: a.email ?? "",
+    languages: tr(a.languages, lang),
+    // menor de idade: celular e e-mail do próprio atleta não vão para material público (fica o do responsável)
+    phone: age !== null && age < 18 ? "" : fmtPhone(a.phone),
+    email: age !== null && age < 18 ? "" : (a.email ?? ""),
     instagram: igHandle(a.instagram),
     agent: a.agent ?? "",
     guardian: a.guardianName ? `${a.guardianName}${a.guardianPhone ? ` · ${fmtPhone(a.guardianPhone)}` : ""}` : "",

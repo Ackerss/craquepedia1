@@ -17,7 +17,8 @@ export const dynamic = "force-dynamic";
 const ST: Record<string, { label: string; color: string }> = {
   aberto: { label: "Aguardando atleta", color: "#d97706" },
   recebido: { label: "Recebido · IA organizando", color: "#2563eb" },
-  processado: { label: "Recebido e organizado", color: "#16a34a" },
+  enviando: { label: "Chegando agora...", color: "#2563eb" },
+  processado: { label: "Recebido", color: "#16a34a" },
 };
 
 export default async function Formularios({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {

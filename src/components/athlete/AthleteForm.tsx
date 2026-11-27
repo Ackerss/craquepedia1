@@ -106,10 +106,10 @@ export function AthleteForm({
             <input name="currentClub" defaultValue={a.currentClub ?? ""} className="input" />
           </F>
           <F label="Altura (cm)">
-            <input name="heightCm" inputMode="numeric" defaultValue={a.heightCm ?? ""} className="input" placeholder="178" />
+            <input name="heightCm" inputMode="decimal" defaultValue={a.heightCm ?? ""} className="input" placeholder="178" />
           </F>
           <F label="Peso (kg)">
-            <input name="weightKg" inputMode="numeric" defaultValue={a.weightKg ?? ""} className="input" placeholder="72" />
+            <input name="weightKg" inputMode="decimal" defaultValue={a.weightKg ?? ""} className="input" placeholder="72" />
           </F>
         </div>
         <div className="mt-4">

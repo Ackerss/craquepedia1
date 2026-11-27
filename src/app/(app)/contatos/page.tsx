@@ -78,7 +78,7 @@ export default async function ContatosPage({ searchParams }: { searchParams: Pro
                 </div>
                 <div className="text-right text-xs text-slate-500">
                   <p>
-                    <b className="text-ink-900">{sent}</b> envios
+                    <b className="text-ink-900">{sent}</b> {sent === 1 ? "envio" : "envios"}
                   </p>
                   {positive ? <p className="font-semibold text-violet-600">{positive} retorno(s)</p> : null}
                 </div>
@@ -95,7 +95,7 @@ export default async function ContatosPage({ searchParams }: { searchParams: Pro
               {c.notes ? <p className="mt-2 line-clamp-2 text-sm text-slate-600">{c.notes}</p> : null}
               <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3">
                 {c.phone ? (
-                  <a href={waLink(c.phone)} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title={fmtPhone(c.phone)}>
+                  <a href={waLink(c.phone, undefined, c.country)} target="_blank" rel="noreferrer" className="btn-ghost btn-sm" title={fmtPhone(c.phone)}>
                     <MessageCircle className="size-4" /> WhatsApp
                   </a>
                 ) : null}
