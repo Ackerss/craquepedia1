@@ -13,7 +13,9 @@ export const dynamic = "force-dynamic";
 /** Planilha (CSV com ";" — abre direto no Excel e no Google Planilhas). */
 function csv(rows: (string | number | null | undefined)[][]) {
   const cell = (v: string | number | null | undefined) => {
-    const s = v === null || v === undefined ? "" : String(v);
+    let s = v === null || v === undefined ? "" : String(v);
+    // texto que o Excel leria como fórmula (=, +, -, @) ou número gigante (telefone) vira texto fixo: ="..."
+    if (typeof v === "string" && (/^[=+\-@\t\r]/.test(s) || /^\d{10,}$/.test(s))) s = `="${s.replace(/"/g, '""')}"`;
     return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return "﻿" + rows.map((r) => r.map(cell).join(";")).join("\r\n");
@@ -25,6 +27,7 @@ export async function GET(req: Request) {
   if (!(await getSession())) return new Response("não autorizado", { status: 401 });
   await ready();
   const tipo = new URL(req.url).searchParams.get("tipo") ?? "atletas";
+  if (!["atletas", "financeiro", "contatos"].includes(tipo)) return new Response("tipo de planilha inválido", { status: 400 });
   let rows: (string | number | null | undefined)[][] = [];
 
   if (tipo === "financeiro") {

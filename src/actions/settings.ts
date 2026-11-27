@@ -5,13 +5,15 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { packages, services, settings } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
-import { parseBRL, slugify, str } from "@/lib/utils";
+import { moneyError, parseBRL, slugify, str } from "@/lib/utils";
 import { pingAI, type AISettings } from "@/lib/ai";
 
 export async function saveService(id: string | null, _: unknown, form: FormData) {
   await requireUser();
   const name = str(form.get("name"));
   if (!name) return { error: "Informe o nome do serviço." };
+  const bad = moneyError(form.get("price"), "preço");
+  if (bad) return { error: bad };
   const values = {
     name,
     description: str(form.get("description")),
@@ -30,6 +32,8 @@ export async function savePackage(id: string | null, _: unknown, form: FormData)
   await requireUser();
   const name = str(form.get("name"));
   if (!name) return { error: "Informe o nome do pacote." };
+  const bad = moneyError(form.get("price"), "preço");
+  if (bad) return { error: bad };
   const values = {
     name,
     description: str(form.get("description")),

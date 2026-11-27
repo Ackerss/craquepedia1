@@ -5,10 +5,10 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { FileText, MapPin, MessageCircle, PlayCircle, Shield, Trophy } from "lucide-react";
 import { getAthleteBySlug, getCompany, listGallery } from "@/lib/data";
-import { getSport } from "@/lib/sports";
+import { sportOf } from "@/lib/sports";
 import { parseRecords, tr } from "@/lib/resume-data";
 import { getPortfolioTheme, PORTFOLIO_THEMES } from "@/lib/portfolio-themes";
-import { ageFrom, fileUrl, igHandle, initials, waLink, youtubeId } from "@/lib/utils";
+import { ageFrom, fileUrl, igHandle, initials, waLink, youtubeId, isMinor } from "@/lib/utils";
 import { CourtDiagram, hasDiagram } from "@/components/resume/diagrams";
 import { SportIcon } from "@/components/ui/SportIcon";
 
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const a = await getAthleteBySlug((await params).slug);
   if (!a) return { title: "Atleta" };
-  const sport = getSport(a.sport);
+  const sport = sportOf(a);
   return {
     title: `${a.nickname || a.fullName} · ${sport.name}`,
     description: a.bioShort ?? a.bio?.slice(0, 160) ?? undefined,
@@ -98,7 +98,7 @@ export default async function Portfolio({
   if (!a || !a.publicEnabled) notFound();
   const th = getPortfolioTheme(PORTFOLIO_THEMES.some((x) => x.id === sp.tema) ? sp.tema : a.portfolioTheme);
   const [company, gallery] = await Promise.all([getCompany(), listGallery(a.id)]);
-  const sport = getSport(a.sport);
+  const sport = sportOf(a);
   const accent = a.accent || sport.color;
   const age = ageFrom(a.birthDate);
   const cover = fileUrl(a.coverId) ?? fileUrl(a.photoId);
@@ -107,7 +107,8 @@ export default async function Portfolio({
   const style = lang === "en" ? a.playingStyleEn || a.playingStyle : a.playingStyle;
   const photos = gallery.filter((g) => g.id !== a.coverId && g.id !== a.photoId);
   const videos = a.videos.filter((v) => v.url);
-  const contactPhone = company.whatsapp || a.phone;
+  // menor de idade: o contato público é o do responsável (nunca o celular do próprio atleta)
+  const contactPhone = company.whatsapp || (isMinor(a.birthDate) ? a.guardianPhone : a.phone);
   const name = a.nickname || a.fullName.split(" ").slice(0, 2).join(" ");
   const sd = a.sportData ?? {};
   const posKeys = (a.position ?? "")
@@ -119,7 +120,7 @@ export default async function Portfolio({
   const cartel = (sd.cartel ?? "").match(/(\d+)\D+(\d+)(?:\D+(\d+))?/);
   const facts = [
     age !== null ? [String(age), t.age] : null,
-    a.heightCm ? [`${(a.heightCm / 100).toFixed(2)} m`, t.height] : null,
+    a.heightCm ? [`${lang === "en" ? (a.heightCm / 100).toFixed(2) : (a.heightCm / 100).toFixed(2).replace(".", ",")} m`, t.height] : null,
     a.weightKg ? [`${a.weightKg} kg`, t.weight] : null,
     a.dominantSide ? [tr(a.dominantSide, lang), lang === "en" ? "dominant" : (sport.sideLabel ?? "").toLowerCase()] : null,
   ].filter(Boolean) as [string, string][];
@@ -416,7 +417,7 @@ export default async function Portfolio({
         {videos.length ? (
           <section>
             <H accent={accent}>{t.videos}</H>
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {videos.map((v, i) => {
                 const yt = youtubeId(v.url);
                 return yt ? (
@@ -432,7 +433,7 @@ export default async function Portfolio({
                     <p className="px-4 py-3 text-sm font-medium">{v.title}</p>
                   </div>
                 ) : (
-                  <a key={i} href={v.url} target="_blank" rel="noreferrer" className={`flex items-center gap-4 rounded-3xl p-6 transition hover:opacity-90 ${th.card}`}>
+                  <a key={i} href={v.url} target="_blank" rel="noreferrer" className={`flex min-w-0 items-center gap-4 rounded-3xl p-6 transition hover:opacity-90 ${th.card}`}>
                     <PlayCircle className="size-10 shrink-0" style={{ color: accent }} />
                     <div className="min-w-0">
                       <p className="font-semibold">{v.title}</p>

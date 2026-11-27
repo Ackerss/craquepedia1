@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Download, FileText, Globe, MessageCircle, UserPlus } from "lucide-react";
 import { getAthleteBySlug, getCompany } from "@/lib/data";
-import { getSport } from "@/lib/sports";
+import { sportOf } from "@/lib/sports";
 import { SportIcon } from "@/components/ui/SportIcon";
 import { baseUrl, qrSvg } from "@/lib/server-utils";
-import { ageFrom, fileUrl, igHandle, initials, waLink } from "@/lib/utils";
+import { ageFrom, fileUrl, igHandle, initials, waLink, isMinor } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!a) return { title: "Atleta" };
   return {
     title: `${a.nickname || a.fullName} · Cartão`,
-    description: a.bioShort ?? `${getSport(a.sport).name}${a.position ? ` · ${a.position}` : ""}`,
+    description: a.bioShort ?? `${sportOf(a).name}${a.position ? ` · ${a.position}` : ""}`,
     openGraph: { images: a.photoId ? [`/api/files/${a.photoId}`] : [] },
   };
 }
@@ -23,14 +23,15 @@ export default async function Cartao({ params }: { params: Promise<{ slug: strin
   const { slug } = await params;
   const a = await getAthleteBySlug(slug);
   if (!a || !a.publicEnabled) notFound();
-  const sport = getSport(a.sport);
+  const sport = sportOf(a);
   const company = await getCompany();
   const base = await baseUrl();
   const qr = await qrSvg(`${base}/c/${a.slug}`, "#0b1220");
   const accent = a.accent || sport.color;
   const age = ageFrom(a.birthDate);
   const photo = fileUrl(a.photoId);
-  const contactPhone = company.whatsapp || a.phone;
+  // menor de idade: o contato público é o do responsável (nunca o celular do próprio atleta)
+  const contactPhone = company.whatsapp || (isMinor(a.birthDate) ? a.guardianPhone : a.phone);
   const facts = [
     age !== null ? [String(age), "anos"] : null,
     a.heightCm ? [(a.heightCm / 100).toFixed(2).replace(".", ","), "altura (m)"] : null,
@@ -56,8 +57,10 @@ export default async function Cartao({ params }: { params: Promise<{ slug: strin
               {initials(a.fullName)}
             </div>
           )}
-          <h1 className="mt-4 font-display text-4xl font-bold uppercase leading-none tracking-wide text-ink-900">{a.nickname || a.fullName.split(" ")[0]}</h1>
-          {a.nickname ? <p className="mt-1 text-sm text-slate-500">{a.fullName}</p> : null}
+          <h1 className="mt-4 break-words font-display text-4xl font-bold uppercase leading-none tracking-wide text-ink-900">
+            {a.nickname || a.fullName.split(" ").slice(0, 2).join(" ")}
+          </h1>
+          {a.nickname || a.fullName.split(" ").length > 2 ? <p className="mt-1 text-sm text-slate-500">{a.fullName}</p> : null}
           <p className="mt-2 flex items-center justify-center gap-1.5 font-semibold" style={{ color: accent }}>
             <SportIcon sport={sport.slug} className="size-4 shrink-0" /> {[a.position, sport.name].filter(Boolean).join(" · ")}
           </p>
@@ -66,10 +69,10 @@ export default async function Cartao({ params }: { params: Promise<{ slug: strin
         </div>
 
         {facts.length ? (
-          <div className="mx-6 mt-5 grid grid-cols-4 divide-x divide-slate-100 rounded-2xl bg-slate-50 py-3">
+          <div className="mx-6 mt-5 grid auto-cols-fr grid-flow-col divide-x divide-slate-100 rounded-2xl bg-slate-50 py-3">
             {facts.map(([v, l]) => (
-              <div key={l} className="px-1 text-center">
-                <p className="text-lg font-bold text-ink-900">{v}</p>
+              <div key={l} className="min-w-0 px-1 text-center">
+                <p className={`break-words font-bold leading-tight text-ink-900 ${v.length > 8 ? "text-sm" : "text-lg"}`}>{v}</p>
                 <p className="text-[11px] text-slate-500">{l}</p>
               </div>
             ))}

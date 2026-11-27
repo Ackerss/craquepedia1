@@ -58,11 +58,15 @@ export default async function IntakePage({ params }: { params: Promise<{ token: 
               Craque<span className="text-brand-400">pedia</span>
             </span>
           </div>
-          <h1 className="relative mt-5 text-2xl font-bold leading-tight">
-            {intake?.clientName ? `Olá, ${firstName(intake.clientName)}! ` : "Olá! "}
-            Vamos montar seu material de atleta 🏆
-          </h1>
-          <p className="relative mt-1.5 text-sm text-slate-300">Leva uns 5 minutos. Quanto mais detalhes, melhor fica o seu currículo.</p>
+          {intake?.status === "aberto" ? (
+            <>
+              <h1 className="relative mt-5 text-2xl font-bold leading-tight">
+                {intake.clientName ? `Olá, ${firstName(intake.clientName)}! ` : "Olá! "}
+                Vamos montar seu material de atleta 🏆
+              </h1>
+              <p className="relative mt-1.5 text-sm text-slate-300">Leva uns 5 minutos. Quanto mais detalhes, melhor fica o seu currículo.</p>
+            </>
+          ) : null}
         </header>
         {!intake ? (
           <p className="px-5 py-16 text-center text-slate-600">Link inválido. Peça um novo link para a equipe {company.name}.</p>

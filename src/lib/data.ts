@@ -92,7 +92,10 @@ export async function listAthletes(opts: { q?: string; sport?: string; status?: 
   });
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getAthlete(id: string) {
+  if (!UUID.test(id)) return null; // endereço digitado errado → "não encontrado", não erro
   await ready();
   const [a] = await db.select().from(athletes).where(eq(athletes.id, id)).limit(1);
   return a ?? null;
@@ -139,6 +142,8 @@ export async function listDeliverables() {
       athleteSport: athletes.sport,
       athletePhoto: athletes.photoId,
       athletePhone: athletes.phone,
+      guardianName: athletes.guardianName,
+      guardianPhone: athletes.guardianPhone,
       athleteSlug: athletes.slug,
     })
     .from(deliverables)
@@ -149,7 +154,7 @@ export async function listDeliverables() {
 export async function listOrders() {
   await ready();
   return db
-    .select({ o: orders, athleteName: athletes.fullName, athleteId: athletes.id, athletePhone: athletes.phone })
+    .select({ o: orders, athleteName: athletes.fullName, athleteId: athletes.id, athletePhone: athletes.phone, guardianName: athletes.guardianName, guardianPhone: athletes.guardianPhone })
     .from(orders)
     .innerJoin(athletes, eq(athletes.id, orders.athleteId))
     .orderBy(desc(orders.createdAt));
@@ -161,7 +166,7 @@ export async function listPaymentsSince(isoDate: string) {
     .from(payments)
     .innerJoin(orders, eq(orders.id, payments.orderId))
     .innerJoin(athletes, eq(athletes.id, orders.athleteId))
-    .where(dsql`${payments.paidAt} >= ${isoDate}`)
+    .where(dsql`${payments.paidAt} >= ${isoDate} and ${payments.paidAt} <= ${todayISO()}`)
     .orderBy(desc(payments.paidAt));
 }
 
@@ -217,8 +222,9 @@ export async function listContacts() {
   return db
     .select({
       c: contacts,
-      sent: dsql<number>`(select count(*)::int from ${outreach} where ${outreach.contactId} = ${contacts.id})`,
-      positive: dsql<number>`(select count(*)::int from ${outreach} where ${outreach.contactId} = ${contacts.id} and ${outreach.status} in ('interessado','teste','respondeu'))`,
+      // nomes de tabela escritos por extenso: sem isso o "id" da subconsulta era lido como o do próprio envio (dava sempre 0)
+      sent: dsql<number>`(select count(*)::int from "outreach" o where o."contact_id" = "contacts"."id")`,
+      positive: dsql<number>`(select count(*)::int from "outreach" o where o."contact_id" = "contacts"."id" and o."status" in ('interessado','teste','respondeu'))`,
     })
     .from(contacts)
     .orderBy(asc(contacts.name));

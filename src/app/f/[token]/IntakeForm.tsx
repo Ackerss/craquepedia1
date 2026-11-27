@@ -7,6 +7,7 @@ import { getSport } from "@/lib/sports";
 import { SportPicker, SportSpecific } from "@/components/athlete/SportFields";
 import { compressImage } from "@/components/athlete/Photos";
 import { keepValues } from "@/lib/form-submit";
+import { checkIntake } from "@/lib/intake-check";
 import { SportIcon } from "@/components/ui/SportIcon";
 
 const UF = "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
@@ -72,6 +73,7 @@ export function IntakeForm({
   const [sport, setSport] = useState(initialSport ?? "");
   const [photos, setPhotos] = useState<{ file: File; url: string }[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [photoWarn, setPhotoWarn] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -99,27 +101,36 @@ export function IntakeForm({
   useEffect(() => {
     const f = formRef.current;
     const fields = pendingDraft.current;
-    if (!restored || !f || !fields) return;
+    if (!f || !fields) return;
     pendingDraft.current = null;
     const byName = new Map<string, string[]>();
     for (const [k, v] of fields) byName.set(k, [...(byName.get(k) ?? []), v]);
     for (const [name, values] of byName) {
       for (const el of Array.from(f.querySelectorAll<HTMLInputElement>(`[name="${CSS.escape(name)}"]`))) {
-        if (el.type === "file" || el.type === "hidden") continue;
+        if (el.type === "file" || (el.type === "hidden" && name !== "positionOrder")) continue;
         if (el.type === "checkbox" || el.type === "radio") el.checked = values.includes(el.value) || (el.value === "on" && values.includes("on"));
         else el.value = values[0] ?? "";
       }
     }
   }, [sport, restored]);
 
-  const saveDraft = (atStep = step) => {
+  const draftFields = () => {
+    const fields: [string, string][] = [];
     const f = formRef.current;
-    if (!f) return;
+    if (f) for (const [k, v] of new FormData(f).entries()) if (typeof v === "string" && v && k !== "sport" && !k.startsWith("$")) fields.push([k, v]);
+    return fields;
+  };
+  const saveDraft = (atStep = step, atSport = sport) => {
     try {
-      const fields: [string, string][] = [];
-      for (const [k, v] of new FormData(f).entries()) if (typeof v === "string" && v && k !== "sport" && !k.startsWith("$")) fields.push([k, v]);
-      localStorage.setItem(draftKey, JSON.stringify({ sport, step: atStep, fields } satisfies Draft));
+      localStorage.setItem(draftKey, JSON.stringify({ sport: atSport, step: atStep, fields: draftFields() } satisfies Draft));
     } catch {}
+  };
+  // trocar o esporte não apaga o que já foi digitado nos campos que existem nos dois esportes
+  const changeSport = (s: string) => {
+    if (s === sport) return;
+    pendingDraft.current = draftFields();
+    setSport(s);
+    saveDraft(step, s);
   };
   useEffect(() => {
     if (state?.ok) {
@@ -145,12 +156,12 @@ export function IntakeForm({
   const validate = (): string | null => {
     const f = formRef.current;
     if (!f) return null;
-    const v = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? "";
     if (step === 0 && !sport) return "Escolha o seu esporte.";
-    if (step === 1) {
-      if (v("fullName").split(/\s+/).length < 2) return "Informe seu nome completo.";
-      if (!v("birthDate")) return "Informe sua data de nascimento.";
-      if (v("phone").replace(/\D/g, "").length < 10) return "Informe um WhatsApp válido com DDD.";
+    const v = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+    const r = checkIntake(v, step);
+    if (r) {
+      if (r.step !== step) setStep(r.step);
+      return r.error;
     }
     return null;
   };
@@ -180,6 +191,7 @@ export function IntakeForm({
   return (
     <form
       ref={formRef}
+      noValidate
       onSubmit={(e) => {
         // Enter num campo antes da última etapa só avança (não envia)
         if (step < STEPS.length - 1) {
@@ -187,9 +199,36 @@ export function IntakeForm({
           go(1);
           return;
         }
+        // confere tudo de novo antes de enviar (o atleta pode ter voltado e mudado algo)
+        const f = formRef.current;
+        const all = f ? checkIntake((n) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "") : null;
+        if (all) {
+          e.preventDefault();
+          setErr(all.error);
+          setStep(all.step);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        if (!(f?.elements.namedItem("consent") as HTMLInputElement | null)?.checked) {
+          e.preventDefault();
+          setErr("Marque a autorização de uso dos dados para enviar.");
+          return;
+        }
+        setErr(null);
         return submit(e);
       }}
-      onChange={() => saveDraft()}
+      onChange={() => {
+        saveDraft();
+        if (err) setErr(null);
+      }}
+      onKeyDown={(e) => {
+        // Enter (ou "Ir" no teclado do celular) num campo de texto avança a etapa
+        const t = e.target as HTMLElement;
+        if (e.key === "Enter" && t.tagName === "INPUT" && step < STEPS.length - 1) {
+          e.preventDefault();
+          go(1);
+        }
+      }}
       className="pb-28"
     >
       <input type="hidden" name="sport" value={sport} />
@@ -219,17 +258,17 @@ export function IntakeForm({
         <div className={step === 0 ? "block" : "hidden"}>
           <h2 className="mb-1 text-xl font-bold text-ink-900">Qual é o seu esporte?</h2>
           <p className="mb-4 text-sm text-slate-500">Assim mostramos as perguntas certas para você.</p>
-          <SportPicker value={sport} onChange={(s) => setSport(s)} />
+          <SportPicker value={sport} onChange={changeSport} />
         </div>
 
         {/* 1 Sobre você */}
         <div className={step === 1 ? "block space-y-4" : "hidden"}>
           <h2 className="text-xl font-bold text-ink-900">Sobre você</h2>
           <F label="Nome completo *">
-            <input name="fullName" defaultValue={initialName ?? ""} className="input" autoComplete="name" />
+            <input name="fullName" maxLength={120} defaultValue={initialName ?? ""} className="input" autoComplete="name" />
           </F>
           <F label="Apelido esportivo" hint="Como você é conhecido em campo/quadra">
-            <input name="nickname" defaultValue={pv("nickname")} className="input" />
+            <input name="nickname" maxLength={60} defaultValue={pv("nickname")} className="input" />
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Nascimento *">
@@ -245,7 +284,7 @@ export function IntakeForm({
           </div>
           <div className="grid grid-cols-[1fr_90px] gap-3">
             <F label="Cidade">
-              <input name="city" defaultValue={pv("city")} className="input" autoComplete="address-level2" />
+              <input name="city" maxLength={80} defaultValue={pv("city")} className="input" autoComplete="address-level2" />
             </F>
             <F label="UF">
               <select name="state" defaultValue={pv("state")} className="input">
@@ -258,28 +297,28 @@ export function IntakeForm({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Nacionalidade">
-              <input name="nationality" defaultValue={pv("nationality") || "Brasileira"} className="input" />
+              <input name="nationality" maxLength={60} defaultValue={pv("nationality") || "Brasileira"} className="input" />
             </F>
             <F label="Tem outra cidadania?">
-              <input name="secondNationality" defaultValue={pv("secondNationality")} className="input" placeholder="ex.: Italiana" />
+              <input name="secondNationality" maxLength={60} defaultValue={pv("secondNationality")} className="input" placeholder="ex.: Italiana" />
             </F>
           </div>
           <F label="WhatsApp *">
-            <input name="phone" inputMode="tel" defaultValue={initialPhone ?? ""} className="input" placeholder="(11) 99999-9999" autoComplete="tel" />
+            <input name="phone" maxLength={30} inputMode="tel" defaultValue={initialPhone ?? ""} className="input" placeholder="(11) 99999-9999" autoComplete="tel" />
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="E-mail">
-              <input name="email" type="email" defaultValue={pv("email")} className="input" autoComplete="email" />
+              <input name="email" maxLength={120} type="email" defaultValue={pv("email")} className="input" autoComplete="email" />
             </F>
             <F label="Instagram">
-              <input name="instagram" defaultValue={pv("instagram")} className="input" placeholder="@seuperfil" />
+              <input name="instagram" maxLength={120} defaultValue={pv("instagram")} className="input" placeholder="@seuperfil" />
             </F>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="mb-3 text-sm font-medium text-slate-700">Menor de 18 anos? Dados do responsável:</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <input name="guardianName" defaultValue={pv("guardianName")} className="input" placeholder="Nome do responsável" />
-              <input name="guardianPhone" inputMode="tel" defaultValue={pv("guardianPhone")} className="input" placeholder="WhatsApp do responsável" />
+              <input name="guardianName" maxLength={120} defaultValue={pv("guardianName")} className="input" placeholder="Nome do responsável" />
+              <input name="guardianPhone" maxLength={30} inputMode="tel" defaultValue={pv("guardianPhone")} className="input" placeholder="WhatsApp do responsável" />
             </div>
           </div>
         </div>
@@ -290,14 +329,14 @@ export function IntakeForm({
             <SportIcon sport={def?.slug} className="size-5 text-brand-600" /> Dados de {def?.name ?? "esporte"}
           </h2>
           <F label={def?.clubLabel ?? "Clube atual"}>
-            <input name="currentClub" defaultValue={pv("currentClub")} className="input" />
+            <input name="currentClub" maxLength={120} defaultValue={pv("currentClub")} className="input" />
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Altura (cm)">
-              <input name="heightCm" inputMode="numeric" defaultValue={pv("heightCm")} className="input" placeholder="178" />
+              <input name="heightCm" maxLength={12} inputMode="decimal" defaultValue={pv("heightCm")} className="input" placeholder="178" />
             </F>
             <F label="Peso (kg)">
-              <input name="weightKg" inputMode="numeric" defaultValue={pv("weightKg")} className="input" placeholder="72" />
+              <input name="weightKg" maxLength={12} inputMode="decimal" defaultValue={pv("weightKg")} className="input" placeholder="72" />
             </F>
           </div>
           {sport ? (
@@ -310,7 +349,7 @@ export function IntakeForm({
             />
           ) : null}
           <F label="Como você descreve seu estilo de jogo?" hint="Ex.: rápido, bom no 1x1, forte no jogo aéreo, liderança...">
-            <textarea name="playingStyle" className="input" rows={3} />
+            <textarea name="playingStyle" maxLength={4000} className="input" rows={3} />
           </F>
         </div>
 
@@ -319,23 +358,23 @@ export function IntakeForm({
           <h2 className="text-xl font-bold text-ink-900">Sua trajetória</h2>
           <p className="-mt-2 text-sm text-slate-500">Escreva do seu jeito, sem se preocupar com formatação. Nossa equipe organiza tudo.</p>
           <F label="Clubes / equipes por onde passou" hint="Ex.: 2022-2023 Santos Sub-15; 2024 até hoje Palmeiras Sub-17">
-            <textarea name="historico" className="input" rows={4} />
+            <textarea name="historico" maxLength={4000} className="input" rows={4} />
           </F>
           <F label="Títulos, prêmios e conquistas" hint="Ex.: Campeão Paulista Sub-15 (2023), artilheiro da Copa X (2024)">
-            <textarea name="conquistas" className="input" rows={4} />
+            <textarea name="conquistas" maxLength={4000} className="input" rows={4} />
           </F>
           <F label="Seus números" hint="Jogos, gols, assistências, tempos, ranking... o que tiver">
-            <textarea name="numeros" className="input" rows={3} />
+            <textarea name="numeros" maxLength={4000} className="input" rows={3} />
           </F>
           <F label="Conte um pouco sobre você" hint="Quando começou, o que te motiva, seus objetivos">
-            <textarea name="bio" className="input" rows={4} />
+            <textarea name="bio" maxLength={4000} className="input" rows={4} />
           </F>
           <div className="grid gap-3 sm:grid-cols-2">
             <F label="Escola / faculdade">
-              <input name="edu_school" defaultValue={pv("edu_school")} className="input" />
+              <input name="edu_school" maxLength={120} defaultValue={pv("edu_school")} className="input" />
             </F>
             <F label="Ano em que termina os estudos">
-              <input name="edu_graduationYear" inputMode="numeric" defaultValue={pv("edu_graduationYear")} className="input" />
+              <input name="edu_graduationYear" maxLength={10} inputMode="numeric" defaultValue={pv("edu_graduationYear")} className="input" />
             </F>
             <F label="Nível de inglês">
               <select name="edu_english" defaultValue={pv("edu_english")} className="input">
@@ -347,7 +386,7 @@ export function IntakeForm({
               </select>
             </F>
             <F label="Idiomas">
-              <input name="languages" defaultValue={pv("languages")} className="input" placeholder="Português, Espanhol..." />
+              <input name="languages" maxLength={120} defaultValue={pv("languages")} className="input" placeholder="Português, Espanhol..." />
             </F>
           </div>
           <F label="Seu objetivo com a Craquepedia">
@@ -361,10 +400,10 @@ export function IntakeForm({
             </select>
           </F>
           <F label="Links de vídeos (YouTube, Instagram, Drive)" hint="Cole um link por linha">
-            <textarea name="videos" className="input" rows={3} placeholder="https://" />
+            <textarea name="videos" maxLength={4000} className="input" rows={3} placeholder="https://" />
           </F>
           <F label="Como conheceu a Craquepedia?">
-            <input name="source" defaultValue={pv("source")} className="input" placeholder="Indicação de..., Instagram..." />
+            <input name="source" maxLength={160} defaultValue={pv("source")} className="input" placeholder="Indicação de..., Instagram..." />
           </F>
         </div>
 
@@ -386,10 +425,22 @@ export function IntakeForm({
             accept="image/*"
             multiple
             hidden
-            onChange={(e) => {
-              const list = Array.from(e.target.files ?? []).map((file) => ({ file, url: URL.createObjectURL(file) }));
-              setPhotos((p) => [...p, ...list].slice(0, 8));
+            onChange={async (e) => {
+              const picked = Array.from(e.target.files ?? []);
               e.target.value = "";
+              // só fica o que o navegador consegue abrir como foto (arquivo errado ou formato estranho é recusado com aviso)
+              const ok: { file: File; url: string }[] = [];
+              const bad: string[] = [];
+              for (const file of picked) {
+                try {
+                  (await createImageBitmap(file)).close();
+                  ok.push({ file, url: URL.createObjectURL(file) });
+                } catch {
+                  bad.push(file.name);
+                }
+              }
+              setPhotoWarn(bad.length ? `Não conseguimos abrir: ${bad.join(", ")}. Envie fotos em JPG ou PNG (tire um print se precisar).` : null);
+              setPhotos((p) => [...p, ...ok].slice(0, 8));
             }}
           />
           <div className="grid grid-cols-3 gap-2">
@@ -414,6 +465,8 @@ export function IntakeForm({
               </button>
             ) : null}
           </div>
+          {photoWarn ? <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{photoWarn}</p> : null}
+          {restored && !photos.length ? <p className="text-xs text-slate-400">As fotos não ficam salvas no rascunho: se já tinha escolhido, adicione de novo.</p> : null}
           <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 text-sm text-slate-600">
             <input type="checkbox" name="consent" className="mt-0.5 size-5 shrink-0 accent-emerald-600" />
             <span>
@@ -424,11 +477,16 @@ export function IntakeForm({
           </label>
           {state?.error ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p> : null}
         </div>
-        {err ? <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{err}</p> : null}
       </div>
 
       {/* Navegação */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
+        {/* o aviso fica colado nos botões: no celular ele sempre aparece na tela */}
+        {err ? (
+          <p role="alert" className="mx-auto mb-2 max-w-xl rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
+            {err}
+          </p>
+        ) : null}
         <div className="mx-auto flex max-w-xl gap-3">
           {step > 0 ? (
             <button type="button" onClick={() => go(-1)} className="btn-ghost px-4">

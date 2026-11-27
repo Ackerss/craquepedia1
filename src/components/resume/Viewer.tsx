@@ -79,8 +79,8 @@ export function ResumeViewer({
           <PrintButton label={printLabel ?? (en ? "Download PDF" : "Baixar PDF")} />
         </div>
       </div>
-      <div className="flex justify-center overflow-x-auto px-4 py-8 print:block print:p-0">
-        <div className={`origin-top max-[820px]:scale-[0.46] print:scale-100 ${t.pages && t.pages > 1 ? "max-[820px]:-mb-[1250px]" : "max-[820px]:-mb-[600px]"}`}>
+      <div className="flex justify-center overflow-x-auto px-4 py-8 print:block print:overflow-visible print:p-0">
+        <div className={`origin-top max-[820px]:scale-[0.46] print:!mb-0 print:scale-100 ${t.pages && t.pages > 1 ? "max-[820px]:-mb-[1250px]" : "max-[820px]:-mb-[600px]"}`}>
           <ResumeDocument data={data} template={template} />
         </div>
       </div>

@@ -9,7 +9,9 @@ import { requireUser } from "@/lib/auth";
 import { enrichAthlete, generateText, reviewAthlete, type TextKind } from "@/lib/ai";
 import { getAthlete, logActivity, ready, uniqueSlug } from "@/lib/data";
 import { getSport } from "@/lib/sports";
-import { int, str } from "@/lib/utils";
+import { ATHLETE_STATUS } from "@/lib/catalog";
+import { heightCm, int, str, weightKg } from "@/lib/utils";
+import { imageMime } from "@/lib/server-utils";
 
 function json<T>(v: FormDataEntryValue | null, fallback: T): T {
   if (!v) return fallback;
@@ -45,8 +47,8 @@ function parseAthleteForm(form: FormData): Partial<NewAthlete> {
     otherSocials: str(form.get("otherSocials")),
     guardianName: str(form.get("guardianName")),
     guardianPhone: str(form.get("guardianPhone")),
-    heightCm: int(form.get("heightCm")),
-    weightKg: int(form.get("weightKg")),
+    heightCm: heightCm(form.get("heightCm")),
+    weightKg: weightKg(form.get("weightKg")),
     dominantSide: str(form.get("dominantSide")),
     currentClub: str(form.get("currentClub")),
     agent: str(form.get("agent")),
@@ -105,7 +107,7 @@ export async function updateAthlete(id: string, _: unknown, form: FormData) {
 export async function setAthleteStatus(id: string, status: string) {
   const s = await requireUser();
   await db.update(athletes).set({ status, updatedAt: new Date() }).where(eq(athletes.id, id));
-  await logActivity("status", `Status alterado para ${status}`, id, s.uid);
+  await logActivity("status", `Status alterado para ${ATHLETE_STATUS.find((x) => x.key === status)?.label ?? status}`, id, s.uid);
   revalidatePath(`/atletas/${id}`);
   revalidatePath("/atletas");
 }
@@ -218,16 +220,17 @@ export async function uploadAthleteFiles(athleteId: string, kind: "photo" | "gal
   if (!list.length) return { error: "Nenhum arquivo enviado." };
   const ids: string[] = [];
   for (const f of list) {
-    if (!f.type.startsWith("image/")) continue;
     if (f.size > 6 * 1024 * 1024) return { error: `"${f.name}" é muito grande (máx. 6 MB).` };
     const buf = Buffer.from(await f.arrayBuffer());
+    const mime = imageMime(buf);
+    if (!mime) return { error: `"${f.name}" não é uma foto que o navegador consiga abrir. Use JPG, PNG ou WEBP.` };
     const [row] = await db
       .insert(files)
       .values({
         athleteId,
         kind: kind === "cover" ? "gallery" : kind,
         name: f.name,
-        mime: f.type,
+        mime,
         size: f.size,
         width: int(form.get("width")) ?? null,
         height: int(form.get("height")) ?? null,
@@ -238,7 +241,7 @@ export async function uploadAthleteFiles(athleteId: string, kind: "photo" | "gal
   }
   if (kind === "photo" && ids[0]) await db.update(athletes).set({ photoId: ids[0], updatedAt: new Date() }).where(eq(athletes.id, athleteId));
   if (kind === "cover" && ids[0]) await db.update(athletes).set({ coverId: ids[0], updatedAt: new Date() }).where(eq(athletes.id, athleteId));
-  await logActivity("arquivo", kind === "photo" ? "Atualizou a foto principal" : `Adicionou ${ids.length} foto(s) à galeria`, athleteId, s.uid);
+  await logActivity("arquivo", kind === "photo" ? "Atualizou a foto principal" : kind === "cover" ? "Trocou a foto de capa" : `Adicionou ${ids.length} foto(s) à galeria`, athleteId, s.uid);
   revalidatePath(`/atletas/${athleteId}`);
   return { ok: true, ids };
 }

@@ -11,7 +11,9 @@ type Info = { name: string; short: string; position: string; sport: string; spor
 type C = Contact & { already: boolean; match: boolean };
 
 function isEn(c: Contact) {
-  return c.kind === "universidade" || !!(c.country && !/^bra/i.test(c.country.trim()));
+  // países de língua portuguesa recebem a mensagem em português
+  const pt = /^(bra|portugal|angola|mo[cç]ambique|cabo verde|guin[eé]-bissau|s[aã]o tom[eé]|timor)/i;
+  return (c.kind === "universidade" && !(c.country && pt.test(c.country.trim()))) || !!(c.country && !pt.test(c.country.trim()));
 }
 
 function message(c: Contact, i: Info) {

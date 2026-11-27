@@ -6,7 +6,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald", display: "swap" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
 
+// endereço do site para as prévias de link (WhatsApp/Instagram) usarem a imagem certa
+const SITE = process.env.APP_URL ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE),
   title: { default: "Craquepedia", template: "%s · Craquepedia" },
   description: "Central de serviços para atletas da Craquepedia.",
   icons: { icon: "/brand/icon.svg" },

@@ -102,8 +102,10 @@ body {
   .no-print {
     display: none !important;
   }
+  .print-page + .print-page {
+    break-before: page;
+  }
   .print-page {
-    break-after: page;
     box-shadow: none !important;
     margin: 0 !important;
     border-radius: 0 !important;

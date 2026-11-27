@@ -64,7 +64,7 @@ export function Quadra({ d }: { d: ResumeData }) {
   );
   const info = [...personal(d), ...physical(d).filter(([k]) => k !== d.positionLabel)].filter(([k]) => !d.metrics.some((m) => m.label === k));
   return (
-    <div className="print-page bg-white font-sans text-slate-800" style={PAGE}>
+    <div className="print-page flex flex-col bg-white font-sans text-slate-800" style={PAGE}>
       <div className="relative h-[300px] overflow-hidden bg-[#070b14] text-white">
         <img src={d.sportImage} alt="" className="absolute -right-10 top-0 h-full w-[60%] object-cover opacity-55" style={{ maskImage: "linear-gradient(90deg, transparent, black 55%)" }} />
         <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 15% 120%, ${d.accent}66, transparent 55%)` }} />
@@ -182,7 +182,8 @@ export function Quadra({ d }: { d: ResumeData }) {
         </main>
       </div>
 
-      <div className="absolute inset-x-11 bottom-8">
+      <div className="h-6 shrink-0" />
+      <div className="mx-11 mb-8 mt-auto">
         <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-3.5">
           <QR svg={d.qr} size={66} />
           <div className="min-w-0 flex-1">
@@ -214,7 +215,7 @@ export function Marcas({ d }: { d: ResumeData }) {
     </h2>
   );
   return (
-    <div className="print-page bg-[#f6f7f9] font-sans text-slate-800" style={PAGE}>
+    <div className="print-page flex flex-col bg-[#f6f7f9] font-sans text-slate-800" style={PAGE}>
       <div className="relative overflow-hidden bg-[#070b14] px-11 pb-10 pt-10 text-white">
         <img src={d.sportImage} alt="" className="absolute right-0 top-0 h-full w-[58%] object-cover opacity-70" style={{ maskImage: "linear-gradient(90deg, transparent, black 50%)" }} />
         <div className="relative flex items-center gap-6">
@@ -335,7 +336,8 @@ export function Marcas({ d }: { d: ResumeData }) {
           </div>
         </aside>
       </div>
-      <div className="absolute inset-x-11 bottom-7">
+      <div className="h-6 shrink-0" />
+      <div className="mx-11 mb-7 mt-auto">
         <div className="mb-2 flex flex-wrap gap-x-5 text-[11px] text-slate-600">
           {lim(contact(d), 4).map(([k, v]) => (
             <span key={k}>
@@ -369,7 +371,7 @@ export function Luta({ d }: { d: ResumeData }) {
   ).filter(([k, v]) => k && v);
   const parts = d.displayName.split(" ");
   return (
-    <div className="print-page font-sans text-white" style={{ ...PAGE, background: "#0a0a0c" }}>
+    <div className="print-page flex flex-col font-sans text-white" style={{ ...PAGE, background: "#0a0a0c" }}>
       <div className="relative h-[560px] overflow-hidden">
         {img ? (
           <img src={img} alt={d.name} className="absolute right-0 top-0 h-full w-[64%] object-cover object-top" style={{ maskImage: "linear-gradient(90deg, transparent, black 30%)" }} />
@@ -454,7 +456,8 @@ export function Luta({ d }: { d: ResumeData }) {
           ) : null}
         </main>
       </div>
-      <div className="absolute inset-x-11 bottom-7">
+      <div className="h-6 shrink-0" />
+      <div className="mx-11 mb-7 mt-auto">
         <div className="mb-2 flex flex-wrap gap-x-5 text-[11px] text-white/70">
           {lim(contact(d), 4).map(([k, v]) => (
             <span key={k}>
@@ -476,7 +479,7 @@ export function Card({ d }: { d: ResumeData }) {
   const attrs = d.stats.length ? lim(d.stats, 6) : d.metrics.map((m) => ({ label: m.label, value: m.value + (m.unit ? ` ${m.unit}` : "") })).slice(0, 6);
   const pos = d.position.split(",")[0]?.trim() ?? "";
   return (
-    <div className="print-page font-sans text-slate-800" style={{ ...PAGE, background: "linear-gradient(180deg,#eef1f5,#ffffff 45%)" }}>
+    <div className="print-page flex flex-col font-sans text-slate-800" style={{ ...PAGE, background: "linear-gradient(180deg,#eef1f5,#ffffff 45%)" }}>
       <div className="grid grid-cols-[318px_1fr] gap-9 px-11 pt-11">
         {/* Card */}
         <div className="rounded-[26px] p-[5px] shadow-2xl" style={{ background: `linear-gradient(150deg, #f8e7a8, ${d.accent} 45%, #0b1220)` }}>
@@ -583,7 +586,8 @@ export function Card({ d }: { d: ResumeData }) {
           </div>
         </div>
       </div>
-      <Footer d={d} className="absolute inset-x-11 bottom-7" />
+      <div className="h-6 shrink-0" />
+      <Footer d={d} className="mx-11 mb-7 mt-auto" />
     </div>
   );
 }
@@ -595,7 +599,7 @@ export function Card({ d }: { d: ResumeData }) {
 export function Trajetoria({ d }: { d: ResumeData }) {
   const items = lim(timeline(d), 12);
   return (
-    <div className="print-page bg-white font-sans text-slate-800" style={PAGE}>
+    <div className="print-page flex flex-col bg-white font-sans text-slate-800" style={PAGE}>
       <div className="flex items-center gap-6 px-12 pb-7 pt-11">
         <Photo d={d} size={104} style={{ boxShadow: `0 0 0 4px #fff, 0 0 0 7px ${d.accent}` }} />
         <div className="min-w-0 flex-1">
@@ -673,7 +677,8 @@ export function Trajetoria({ d }: { d: ResumeData }) {
           ))}
         </div>
       ) : null}
-      <div className="absolute inset-x-12 bottom-7">
+      <div className="h-6 shrink-0" />
+      <div className="mx-12 mb-7 mt-auto">
         <div className="mb-2 flex flex-wrap justify-center gap-x-5 text-[11px] text-slate-600">
           {lim(contact(d), 4).map(([k, v]) => (
             <span key={k}>
@@ -745,7 +750,7 @@ export function Dossie({ d }: { d: ResumeData }) {
       </div>
 
       {/* Ficha */}
-      <div className="print-page bg-white font-sans text-slate-800" style={PAGE}>
+      <div className="print-page flex flex-col bg-white font-sans text-slate-800" style={PAGE}>
         <div className="h-2" style={{ background: d.accent }} />
         <div className="grid grid-cols-[1fr_240px] gap-8 px-12 pt-9">
           <main className="min-w-0 space-y-6">
@@ -840,7 +845,8 @@ export function Dossie({ d }: { d: ResumeData }) {
             </section>
           </aside>
         </div>
-        <div className="absolute inset-x-12 bottom-8 flex items-center gap-5 rounded-2xl bg-[#0b1220] p-4 text-white">
+        <div className="h-6 shrink-0" />
+        <div className="mx-12 mb-8 mt-auto flex items-center gap-5 rounded-2xl bg-[#0b1220] p-4 text-white">
           <QR svg={d.qrLight} size={72} />
           <div className="min-w-0 flex-1">
             <p className="font-display text-[18px] font-semibold uppercase tracking-wide">{d.L.contactUs}</p>

@@ -7,7 +7,7 @@ import { athletes, deliverables, orders, packages, payments, services } from "@/
 import { requireUser } from "@/lib/auth";
 import { createDeliverablesFor } from "@/lib/work";
 import { logActivity } from "@/lib/data";
-import { brl, parseBRL, str, todayISO } from "@/lib/utils";
+import { brl, moneyError, parseBRL, str, todayISO } from "@/lib/utils";
 
 function refresh(athleteId?: string) {
   if (athleteId) revalidatePath(`/atletas/${athleteId}`);
@@ -20,6 +20,8 @@ function refresh(athleteId?: string) {
 export async function contractServices(athleteId: string, _: unknown, form: FormData) {
   const s = await requireUser();
   const packageId = str(form.get("packageId"));
+  const bad = moneyError(form.get("total"), "valor total") ?? moneyError(form.get("paidNow"), "valor já recebido");
+  if (bad) return { error: bad };
   let keys = form.getAll("services").map(String);
   let title = "Serviços avulsos";
   let total = parseBRL(form.get("total"));
@@ -36,6 +38,7 @@ export async function contractServices(athleteId: string, _: unknown, form: Form
   }
   if (!keys.length) return { error: "Escolha um pacote ou pelo menos um serviço." };
   const paidNow = parseBRL(form.get("paidNow"));
+  if (paidNow > total) return { error: `O valor já recebido (${brl(paidNow)}) é maior que o total do contrato (${brl(total)}).` };
   const status = paidNow >= total && total > 0 ? "pago" : paidNow > 0 ? "parcial" : total === 0 ? "pago" : "aberto";
   const [o] = await db
     .insert(orders)
@@ -89,7 +92,8 @@ export async function updateDeliverable(id: string, _: unknown, form: FormData) 
       title: str(form.get("title")) ?? "Entrega",
       assigneeId: str(form.get("assigneeId")),
       dueDate: str(form.get("dueDate")),
-      link: str(form.get("link")),
+      // link colado sem "https://" (ex.: drive.google.com/...) vira endereço completo
+      link: ((l) => (l && !/^(https?:\/\/|\/)/i.test(l) ? `https://${l}` : l))(str(form.get("link"))),
       notes: str(form.get("notes")),
       stage,
       deliveredAt: stage === "entregue" ? (cur.deliveredAt ?? new Date()) : null,
@@ -126,13 +130,20 @@ export async function deleteDeliverable(id: string) {
 
 export async function addPayment(orderId: string, _: unknown, form: FormData) {
   const s = await requireUser();
+  const bad = moneyError(form.get("amount"), "valor recebido", false);
+  if (bad) return { error: bad };
   const amount = parseBRL(form.get("amount"));
-  if (amount <= 0) return { error: "Informe o valor recebido." };
+  const paidAt = str(form.get("paidAt")) ?? todayISO();
+  if (paidAt > todayISO()) return { error: "A data do pagamento não pode ser no futuro. Registre quando o dinheiro entrar." };
+  const [cur] = await db.select().from(orders).where(eq(orders.id, orderId));
+  if (!cur) return { error: "Contrato não encontrado." };
+  const left = cur.totalCents - cur.paidCents;
+  if (amount > left) return { error: `Esse valor é maior que o que falta receber (${brl(Math.max(0, left))}). Se o contrato mudou, use "Ajustar contrato" antes.` };
   await db.insert(payments).values({
     orderId,
     amountCents: amount,
     method: str(form.get("method")),
-    paidAt: str(form.get("paidAt")) ?? todayISO(),
+    paidAt,
   });
   const o = await recalcOrder(orderId);
   if (o) await logActivity("pagamento", `Recebeu ${brl(amount)} — ${o.title}`, o.athleteId, s.uid);
@@ -180,8 +191,9 @@ export async function deletePayment(paymentId: string) {
 /** Corrige o valor total de um contrato (desconto, ajuste). */
 export async function updateOrderTotal(orderId: string, _: unknown, form: FormData) {
   const s = await requireUser();
+  const bad = moneyError(form.get("total"), "valor do contrato");
+  if (bad) return { error: bad };
   const total = parseBRL(form.get("total"));
-  if (total < 0) return { error: "Valor inválido." };
   const [cur] = await db.select().from(orders).where(eq(orders.id, orderId));
   if (!cur) return { error: "Contrato não encontrado." };
   await db

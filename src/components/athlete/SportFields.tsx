@@ -64,8 +64,20 @@ export function SportSpecific({
     <div className="grid gap-4 sm:grid-cols-2" key={sport}>
       <div className={multiPosition && def.positions ? "sm:col-span-2" : ""}>
         <label className="label">{def.positionLabel}</label>
+        {def.positions && multiPosition ? <p className="-mt-1 mb-2 text-xs text-slate-400">Pode marcar mais de uma. Marque primeiro a principal.</p> : null}
         {def.positions && multiPosition ? (
-          <div className="flex flex-wrap gap-2">
+          <div
+            className="flex flex-wrap gap-2"
+            onChange={(e) => {
+              // guarda a ordem em que o atleta marcou (a primeira é a principal)
+              const el = e.target as HTMLInputElement;
+              const box = e.currentTarget.querySelector<HTMLInputElement>('input[name="positionOrder"]');
+              if (el.name !== "position" || !box) return;
+              const list = box.value.split("|").filter((x) => x && x !== el.value);
+              box.value = (el.checked ? [...list, el.value] : list).join("|");
+            }}
+          >
+            <input type="hidden" name="positionOrder" defaultValue={current.join("|")} />
             {def.positions.map((p) => (
               <label key={p} className="cursor-pointer">
                 <input type="checkbox" name="position" value={p} defaultChecked={current.includes(p)} className="peer sr-only" />

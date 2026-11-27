@@ -15,9 +15,9 @@ type S = { error?: string; ok?: string } | null;
 const money = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 
 export function CompanyForm({ c }: { c: CompanySettings }) {
-  const [state, action] = useActionState(saveCompany, null);
+  const [state, action, pending] = useActionState(saveCompany, null);
   return (
-    <form action={action} className="grid gap-3 sm:grid-cols-2">
+    <form onSubmit={keepValues(action)} className="grid gap-3 sm:grid-cols-2">
       <div>
         <label className="label">Nome da empresa</label>
         <input name="name" defaultValue={c.name} className="input" />
@@ -43,7 +43,7 @@ export function CompanyForm({ c }: { c: CompanySettings }) {
         <input name="pix" defaultValue={c.pix} className="input" />
       </div>
       <div className="flex items-center gap-3 sm:col-span-2">
-        <Submit>Salvar</Submit>
+        <Submit pending={pending}>Salvar</Submit>
         <FormMessage state={state as S} />
       </div>
     </form>
@@ -52,7 +52,7 @@ export function CompanyForm({ c }: { c: CompanySettings }) {
 
 export function ServiceEditor({ s }: { s?: Service }) {
   const [open, setOpen] = useState(false);
-  const [state, action] = useActionState(async (p: unknown, fd: FormData) => {
+  const [state, action, pending] = useActionState(async (p: unknown, fd: FormData) => {
     const r = await saveService(s?.id ?? null, p, fd);
     if (r?.ok) setOpen(false);
     return r;
@@ -69,7 +69,7 @@ export function ServiceEditor({ s }: { s?: Service }) {
         </button>
       )}
       <Modal open={open} onClose={() => setOpen(false)} title={s ? "Editar serviço" : "Novo serviço"}>
-        <form action={action} className="space-y-3">
+        <form onSubmit={keepValues(action)} className="space-y-3">
           <div>
             <label className="label">Nome</label>
             <input name="name" defaultValue={s?.name} className="input" required />
@@ -92,7 +92,7 @@ export function ServiceEditor({ s }: { s?: Service }) {
             <input type="checkbox" name="active" defaultChecked={s?.active ?? true} className="size-4 accent-emerald-600" /> Ativo
           </label>
           <FormMessage state={state as S} />
-          <Submit className="btn-primary w-full">Salvar</Submit>
+          <Submit pending={pending} className="btn-primary w-full">Salvar</Submit>
         </form>
       </Modal>
     </>
@@ -102,7 +102,7 @@ export function ServiceEditor({ s }: { s?: Service }) {
 export function PackageEditor({ p, services }: { p?: Package; services: Service[] }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const [state, action] = useActionState(async (prev: unknown, fd: FormData) => {
+  const [state, action, saving] = useActionState(async (prev: unknown, fd: FormData) => {
     const r = await savePackage(p?.id ?? null, prev, fd);
     if (r?.ok) setOpen(false);
     return r;
@@ -119,7 +119,7 @@ export function PackageEditor({ p, services }: { p?: Package; services: Service[
         </button>
       )}
       <Modal open={open} onClose={() => setOpen(false)} title={p ? "Editar pacote" : "Novo pacote"}>
-        <form action={action} className="space-y-3">
+        <form onSubmit={keepValues(action)} className="space-y-3">
           <div>
             <label className="label">Nome</label>
             <input name="name" defaultValue={p?.name} className="input" required />
@@ -155,11 +155,17 @@ export function PackageEditor({ p, services }: { p?: Package; services: Service[
           <FormMessage state={state as S} />
           <div className="flex gap-2">
             {p ? (
-              <button type="button" className="btn-danger" disabled={pending} onClick={() => start(async () => { await deletePackage(p.id); setOpen(false); })}>
+              <button type="button" className="btn-danger" disabled={pending} onClick={() => {
+                  if (!confirm(`Apagar o pacote "${p.name}"? Contratos antigos continuam como estão.`)) return;
+                  start(async () => {
+                    await deletePackage(p.id);
+                    setOpen(false);
+                  });
+                }}>
                 <Trash2 className="size-4" />
               </button>
             ) : null}
-            <Submit className="btn-primary flex-1">Salvar</Submit>
+            <Submit pending={saving} className="btn-primary flex-1">Salvar</Submit>
           </div>
         </form>
       </Modal>
@@ -247,12 +253,12 @@ export function SetPasswordButton({ userId, name }: { userId: string; name: stri
 }
 
 export function PasswordForm() {
-  const [state, action] = useActionState(changePassword, null);
+  const [state, action, pending] = useActionState(changePassword, null);
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2">
       <input name="current" type="password" placeholder="Senha atual" className="input" required autoComplete="current-password" />
       <input name="next" type="password" placeholder="Nova senha (mín. 8)" className="input" required minLength={8} autoComplete="new-password" />
-      <Submit className="btn-primary sm:col-span-2 sm:justify-self-start">Trocar senha</Submit>
+      <Submit pending={pending} className="btn-primary sm:col-span-2 sm:justify-self-start">Trocar senha</Submit>
       <div className="sm:col-span-2">
         <FormMessage state={state as S} />
       </div>
@@ -261,7 +267,7 @@ export function PasswordForm() {
 }
 
 export function AIForm({ status, models }: { status: { gemini: boolean; geminiFromSettings: boolean; keyHint: string; model: string; gateway: boolean }; models: { id: string; label: string }[] }) {
-  const [state, action] = useActionState(saveAISettings, null);
+  const [state, action, pending] = useActionState(saveAISettings, null);
   const [test, setTest] = useState<S>(null);
   const [testing, startTest] = useTransition();
   return (
@@ -287,7 +293,7 @@ export function AIForm({ status, models }: { status: { gemini: boolean; geminiFr
         <li>Clique em “Create API key” (Criar chave) e copie o código que começa com “AIza”.</li>
         <li>Cole aqui embaixo e salve. Depois clique em “Testar IA”.</li>
       </ol>
-      <form action={action} className="grid gap-3 sm:grid-cols-2">
+      <form onSubmit={keepValues(action)} className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="label">Chave do Gemini {status.geminiFromSettings ? `(salva: ${status.keyHint})` : ""}</label>
           <input name="geminiKey" type="password" autoComplete="off" className="input" placeholder={status.geminiFromSettings ? "Deixe vazio para manter a atual" : "AIza..."} />
@@ -308,7 +314,7 @@ export function AIForm({ status, models }: { status: { gemini: boolean; geminiFr
           </label>
         ) : null}
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-          <Submit>Salvar</Submit>
+          <Submit pending={pending}>Salvar</Submit>
           <button type="button" className="btn-ghost" disabled={testing} onClick={() => startTest(async () => setTest(await testAI()))}>
             {testing ? "Testando..." : "Testar IA"}
           </button>
