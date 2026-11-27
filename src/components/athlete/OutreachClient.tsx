@@ -80,7 +80,7 @@ export function SendMaterial({ athleteId, contacts, info }: { athleteId: string;
               <div key={c.id} className="flex items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate font-medium">{c.organization || c.name}</span>
                 {c.phone ? (
-                  <a href={waLink(c.phone, msg)} target="_blank" rel="noreferrer" className="btn btn-sm bg-[#25D366] text-white hover:bg-[#1ebe5a]">
+                  <a href={waLink(c.phone, msg, c.country)} target="_blank" rel="noreferrer" className="btn btn-sm bg-[#25D366] text-white hover:bg-[#1ebe5a]">
                     <MessageCircle className="size-4" /> WhatsApp
                   </a>
                 ) : null}
@@ -134,7 +134,7 @@ export function OutreachRow({ o, c, athleteId, followMsg, due }: { o: Outreach; 
         </p>
       </div>
       {o.status === "enviado" && due && c.phone && followMsg ? (
-        <a href={waLink(c.phone, followMsg)} target="_blank" rel="noreferrer" className="btn btn-sm bg-amber-100 text-amber-900 hover:bg-amber-200" title="Já passou o prazo: cobrar retorno pelo WhatsApp">
+        <a href={waLink(c.phone, followMsg, c.country)} target="_blank" rel="noreferrer" className="btn btn-sm bg-amber-100 text-amber-900 hover:bg-amber-200" title="Já passou o prazo: cobrar retorno pelo WhatsApp">
           <MessageCircle className="size-4" /> Cobrar retorno
         </a>
       ) : null}

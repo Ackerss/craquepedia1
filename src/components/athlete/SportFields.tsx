@@ -77,7 +77,8 @@ export function SportSpecific({
               box.value = (el.checked ? [...list, el.value] : list).join("|");
             }}
           >
-            <input type="hidden" name="positionOrder" defaultValue={current.join("|")} />
+            {/* campo de texto escondido (não "hidden"): o React não zera o valor dele a cada nova tela */}
+            <input type="text" name="positionOrder" defaultValue={current.join("|")} className="hidden" readOnly tabIndex={-1} aria-hidden />
             {def.positions.map((p) => (
               <label key={p} className="cursor-pointer">
                 <input type="checkbox" name="position" value={p} defaultChecked={current.includes(p)} className="peer sr-only" />

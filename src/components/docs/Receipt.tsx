@@ -1,4 +1,4 @@
-import { and, eq, lt, or, sql } from "drizzle-orm";
+import { and, eq, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { athletes, orders, payments } from "@/db/schema";
 import { getCompany, ready } from "@/lib/data";
@@ -29,7 +29,7 @@ export async function Receipt({ row, signer, toolbar }: { row: NonNullable<Await
   const [{ paidUntil }] = await db
     .select({ paidUntil: sql<number>`coalesce(sum(${payments.amountCents}), 0)::int` })
     .from(payments)
-    .where(and(eq(payments.orderId, o.id), or(lt(payments.paidAt, p.paidAt), and(eq(payments.paidAt, p.paidAt), sql`${payments.createdAt} <= ${p.createdAt}`))));
+    .where(and(eq(payments.orderId, o.id), or(eq(payments.id, p.id), lt(payments.paidAt, p.paidAt), and(eq(payments.paidAt, p.paidAt), lte(payments.createdAt, p.createdAt)))));
   return (
     <div className="min-h-screen bg-slate-200/70 py-8 print:bg-white print:py-0">
       <div className="no-print mx-auto mb-4 flex max-w-[794px] flex-wrap items-center justify-end gap-2 px-4">

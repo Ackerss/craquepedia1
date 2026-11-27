@@ -209,7 +209,7 @@ export default async function Dashboard() {
                         </p>
                       </div>
                     </Link>
-                    <FollowUpActions id={f.o.id} athleteId={f.o.athleteId} phone={f.c.phone} message={msg} />
+                    <FollowUpActions id={f.o.id} athleteId={f.o.athleteId} phone={f.c.phone} email={f.c.email} country={f.c.country} message={msg} />
                   </li>
                 );
               })}
@@ -298,9 +298,9 @@ export default async function Dashboard() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {ath.slice(0, 12).map((a) => (
-                <Link key={a.id} href={`/atletas/${a.id}`} className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-3 text-sm hover:bg-slate-50">
+                <Link key={a.id} href={`/atletas/${a.id}`} className="flex max-w-full items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-3 text-sm hover:bg-slate-50">
                   <Avatar name={a.fullName} photoId={a.photoId} size={28} />
-                  {a.nickname || a.fullName.split(" ")[0]}
+                  <span className="max-w-[12rem] truncate">{a.nickname || a.fullName.split(" ")[0]}</span>
                 </Link>
               ))}
             </div>

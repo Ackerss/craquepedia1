@@ -130,12 +130,17 @@ const EN: Record<string, string> = {
   atual: "present",
 };
 
+/** "Meia-atacante" = "Meia Atacante" = "meia atacante" */
+const norm = (s: string) => s.trim().toLowerCase().replace(/[-\s]+/g, " ");
+const EN_NORM: Record<string, string> = Object.fromEntries(Object.entries(EN).map(([k, v]) => [norm(k), v]));
+
 export function tr(v: string | null | undefined, lang: "pt" | "en") {
   if (!v) return "";
   if (lang === "pt") return v;
+  // separa por vírgula só entre palavras ("2,15 m" e "100,5 kg" continuam inteiros)
   return v
-    .split(/\s*,\s*/)
-    .map((p) => EN[p] ?? EN[p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()] ?? p)
+    .split(/\s*,\s*(?=[^\d\s])/)
+    .map((p) => EN[p] ?? EN_NORM[norm(p)] ?? p)
     .join(", ")
     .replace(/\bAtual\b/g, "Present");
 }
@@ -324,7 +329,12 @@ export function parseRecords(txt?: string | null): RecordItem[] {
       }
       // separadores: "prova: marca", "prova - marca", "prova = marca" ou "prova, marca, ano" (o ":" de um tempo como 33:58 não conta)
       const m = l.match(/^(.+?)\s*(?:(?<!\d):(?!\d)|\s[-–—]\s|=|,\s+)\s*(.+)$/);
-      if (!m) return { event: l, mark: "", extra };
+      if (!m) {
+        // sem separador: "42K 2:38:10 Maratona de Porto Alegre 2025" → prova 42K, marca 2:38:10
+        const t = l.match(/^(.+?)\s+(\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?|\d+[.,]\d+\s*(?:s|m|kg)?)(?:\s+(.+))?$/);
+        if (t) return { event: t[1].trim(), mark: t[2].trim(), extra: [t[3], extra].filter(Boolean).join(" · ") || undefined };
+        return { event: l, mark: "", extra };
+      }
       const [mark, ...rest] = m[2].split(/\s[-–—|]\s|,\s+/);
       return { event: m[1].trim(), mark: mark.trim(), extra: [rest.join(" · "), extra].filter(Boolean).join(" · ") || undefined };
     })

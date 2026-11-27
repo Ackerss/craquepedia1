@@ -146,9 +146,11 @@ function brDigits(phone?: string | null) {
   return d;
 }
 
-export function waLink(phone?: string | null, text?: string) {
-  let d = brDigits(phone);
-  if (d && d.length <= 11) d = "55" + d;
+/** Link do WhatsApp. `country` (do contato): fora do Brasil o número já vem com o código do país e não recebe o 55. */
+export function waLink(phone?: string | null, text?: string, country?: string | null) {
+  const abroad = !!country && !/^(bra|brasil|brazil)/i.test(country.trim());
+  let d = abroad ? onlyDigits(phone).replace(/^00/, "") : brDigits(phone);
+  if (d && d.length <= 11 && !abroad) d = "55" + d;
   const q = text ? `?text=${encodeURIComponent(text)}` : "";
   return d ? `https://wa.me/${d}${q}` : `https://wa.me/${q}`;
 }

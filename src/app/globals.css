@@ -51,6 +51,16 @@ body {
   @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-50;
 }
 
+/* textos longos (e-mail, nome sem espaço, link) quebram em vez de alargar a página no celular.
+   Fora de @layer para valer mais que as classes utilitárias. */
+.grid > * {
+  min-width: 0;
+}
+dd,
+.break-words {
+  overflow-wrap: anywhere;
+}
+
 @layer components {
   textarea.input {
     @apply min-h-[96px] leading-relaxed;

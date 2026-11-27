@@ -82,7 +82,8 @@ export function IntakeForm({
   const def = sport ? getSport(sport) : null;
   const pv = (k: string) => prefill?.[k] ?? "";
   const draftKey = `cq-form-${token}`;
-  const pendingDraft = useRef<[string, string][] | null>(null);
+  // campos a reaplicar quando os campos do esporte certo estiverem na tela
+  const pendingDraft = useRef<{ sport: string; fields: [string, string][] } | null>(null);
   const [restored, setRestored] = useState(false);
 
   // Rascunho automático: se o atleta fechar a página no meio, o que ele digitou volta quando abrir o link de novo.
@@ -91,23 +92,25 @@ export function IntakeForm({
       const raw = localStorage.getItem(draftKey);
       if (!raw) return;
       const d = JSON.parse(raw) as Draft;
-      pendingDraft.current = d.fields ?? [];
+      pendingDraft.current = { sport: d.sport || initialSport || "", fields: d.fields ?? [] };
       if (d.sport) setSport(d.sport);
       if (typeof d.step === "number") setStep(Math.min(d.step, STEPS.length - 1));
       setRestored(true);
     } catch {}
-  }, [draftKey]);
+  }, [draftKey, initialSport]);
 
   useEffect(() => {
     const f = formRef.current;
-    const fields = pendingDraft.current;
-    if (!f || !fields) return;
+    const pend = pendingDraft.current;
+    // espera a tela mostrar os campos do esporte do rascunho (senão os campos do esporte se perdem)
+    if (!f || !pend || (pend.sport && pend.sport !== sport)) return;
+    const fields = pend.fields;
     pendingDraft.current = null;
     const byName = new Map<string, string[]>();
     for (const [k, v] of fields) byName.set(k, [...(byName.get(k) ?? []), v]);
     for (const [name, values] of byName) {
       for (const el of Array.from(f.querySelectorAll<HTMLInputElement>(`[name="${CSS.escape(name)}"]`))) {
-        if (el.type === "file" || (el.type === "hidden" && name !== "positionOrder")) continue;
+        if (el.type === "file" || el.type === "hidden") continue;
         if (el.type === "checkbox" || el.type === "radio") el.checked = values.includes(el.value) || (el.value === "on" && values.includes("on"));
         else el.value = values[0] ?? "";
       }
@@ -128,7 +131,8 @@ export function IntakeForm({
   // trocar o esporte não apaga o que já foi digitado nos campos que existem nos dois esportes
   const changeSport = (s: string) => {
     if (s === sport) return;
-    pendingDraft.current = draftFields();
+    pendingDraft.current = { sport: s, fields: draftFields() };
+    setErr(null);
     setSport(s);
     saveDraft(step, s);
   };
@@ -229,7 +233,7 @@ export function IntakeForm({
           go(1);
         }
       }}
-      className="pb-28"
+      className={err || state?.error ? "pb-52" : "pb-28"}
     >
       <input type="hidden" name="sport" value={sport} />
 
@@ -475,16 +479,15 @@ export function IntakeForm({
               eu for menor de idade, meu responsável está de acordo.
             </span>
           </label>
-          {state?.error ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p> : null}
         </div>
       </div>
 
       {/* Navegação */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
         {/* o aviso fica colado nos botões: no celular ele sempre aparece na tela */}
-        {err ? (
+        {err || (state?.error && !busy) ? (
           <p role="alert" className="mx-auto mb-2 max-w-xl rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-            {err}
+            {err || state?.error}
           </p>
         ) : null}
         <div className="mx-auto flex max-w-xl gap-3">

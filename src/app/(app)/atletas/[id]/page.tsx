@@ -308,7 +308,7 @@ export default async function AthletePage({
             <Readiness athleteId={a.id} r={ready} />
             <section className="card card-pad">
               <h2 className="section-title mb-3">Dados</h2>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
                 {[
                   ["Nascimento", a.birthDate ? `${fmtDate(a.birthDate)}${age !== null ? ` (${age})` : ""}` : null],
                   ["Nacionalidade", [a.nationality, a.secondNationality].filter(Boolean).join(" / ")],
